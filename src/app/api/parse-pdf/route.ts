@@ -79,7 +79,7 @@ export async function POST(request: Request) {
                 // Try to find the matching Team
                 // First exact match on Institution
                 const teamMatch = await db.get('SELECT * FROM teams WHERE institution LIKE ? OR name LIKE ?', [`%${institution}%`, `%${institution}%`]);
-                
+
                 let team_id;
                 if (!teamMatch) {
                     // Create Team dynamically since it was not found, to preserve database integrity
