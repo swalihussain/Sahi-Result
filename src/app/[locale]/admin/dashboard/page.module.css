@@ -1,0 +1,225 @@
+.container {
+    min-height: 100vh;
+    padding: 2rem 5%;
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 2rem;
+    margin-bottom: 3rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.header h1 {
+    font-size: 2.5rem;
+    background: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.header p {
+    color: var(--text-secondary);
+    font-size: 1.1rem;
+}
+
+.logoutBtn {
+    background: rgba(255, 0, 0, 0.1);
+    color: #ff4d4d;
+    border: 1px solid rgba(255, 0, 0, 0.2);
+    padding: 0.5rem 1.5rem;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.2s;
+}
+
+.logoutBtn:hover {
+    background: rgba(255, 0, 0, 0.2);
+}
+
+.grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    gap: 2rem;
+}
+
+.fullWidth {
+    grid-column: 1 / -1;
+}
+
+.card {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    padding: 2rem;
+    backdrop-filter: blur(10px);
+}
+
+.cardHeader {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 2rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    padding-bottom: 1rem;
+}
+
+.icon {
+    font-size: 2rem;
+}
+
+.cardHeader h2 {
+    font-size: 1.5rem;
+    font-weight: 700;
+}
+
+.form {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.formRow {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    align-items: flex-start;
+}
+
+.formRow>* {
+    flex: 1 1 200px;
+}
+
+.inputGroup {
+    display: flex;
+    gap: 1rem;
+}
+
+.inputGroup>select {
+    flex: 2;
+}
+
+.inputGroup>input {
+    flex: 1;
+    min-width: 80px;
+}
+
+input[type="text"],
+input[type="date"],
+input[type="number"],
+select {
+    width: 100%;
+    padding: 1rem;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    color: white;
+    font-family: var(--font-family);
+    font-size: 1rem;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+input:focus,
+select:focus {
+    border-color: var(--accent-secondary);
+}
+
+option {
+    background: var(--bg-color);
+    color: white;
+}
+
+.fileInput {
+    background: rgba(0, 0, 0, 0.2);
+    padding: 1rem;
+    border-radius: 8px;
+    border: 1px dashed var(--border-color);
+}
+
+.fileInput label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+}
+
+.fileInput input {
+    font-size: 0.9rem;
+    padding: 0;
+    border: none;
+    background: transparent;
+}
+
+.submitBtn {
+    background: var(--accent-primary);
+    color: white;
+    border: none;
+    padding: 1rem;
+    border-radius: 8px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+    margin-top: 0.5rem;
+}
+
+.submitBtn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(255, 0, 127, 0.3);
+}
+
+.stats {
+    margin-top: 1.5rem;
+    text-align: center;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    padding-top: 1rem;
+    border-top: 1px dashed rgba(255, 255, 255, 0.1);
+}
+
+.toast {
+    position: fixed;
+    top: 2rem;
+    right: 2rem;
+    padding: 1rem 2rem;
+    border-radius: 8px;
+    font-weight: 600;
+    z-index: 1000;
+    animation: slideIn 0.3s ease-out forwards;
+}
+
+.success {
+    background: rgba(0, 255, 128, 0.2);
+    color: #00ff80;
+    border: 1px solid rgba(0, 255, 128, 0.3);
+}
+
+.error {
+    background: rgba(255, 0, 0, 0.2);
+    color: #ff4d4d;
+    border: 1px solid rgba(255, 0, 0, 0.3);
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@media (max-width: 768px) {
+    .header {
+        flex-direction: column;
+        text-align: center;
+        gap: 1rem;
+    }
+}

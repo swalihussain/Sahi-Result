@@ -1,0 +1,227 @@
+.container {
+    min-height: 80vh;
+    padding: 4rem 5%;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+}
+
+.backLink {
+    color: var(--text-secondary);
+    font-weight: 500;
+    transition: color 0.3s;
+}
+
+.backLink:hover {
+    color: var(--accent-secondary);
+}
+
+.actions {
+    display: flex;
+    gap: 1rem;
+}
+
+.downloadBtn {
+    padding: 0.5rem 1.5rem;
+    border-radius: 8px;
+    background: linear-gradient(90deg, var(--accent-primary), #d4006a);
+    border: none;
+    color: white;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.downloadBtn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 20px rgba(255, 0, 127, 0.2);
+}
+
+/* Result Canvas Wrapper (Visual scaling) */
+.resultDisplayWrapper {
+    overflow-x: auto;
+    display: flex;
+    justify-content: center;
+    padding: 1rem;
+}
+
+.resultCanvas {
+    position: relative;
+    width: 1000px;
+    /* Fixed width for consistent downloads */
+    min-height: 600px;
+    background: linear-gradient(135deg, var(--bg-color), #20132b);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+}
+
+.templateBg {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    z-index: 0;
+    opacity: 0.9;
+}
+
+.resultContent {
+    position: relative;
+    z-index: 1;
+    padding: 4rem;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 600px;
+    background: rgba(13, 14, 21, 0.6);
+    /* Overlay if no template */
+}
+
+.resultContent.hasTemplate {
+    background: rgba(0, 0, 0, 0.4);
+    /* Darker overlay for text readability on images */
+}
+
+/* Specific canvas styles */
+.canvasHeader {
+    text-align: center;
+    margin-bottom: 4rem;
+}
+
+.festInfo {
+    font-size: 1.25rem;
+    color: var(--accent-secondary);
+    text-transform: uppercase;
+    letter-spacing: 4px;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+}
+
+.eventTitle {
+    font-size: 4rem;
+    font-weight: 900;
+    line-height: 1.1;
+    margin-bottom: 0.5rem;
+    color: white;
+    text-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+}
+
+.ceremonyText {
+    color: var(--text-secondary);
+    font-size: 1.2rem;
+}
+
+.winnersGrid {
+    display: flex;
+    justify-content: center;
+    gap: 2rem;
+    align-items: flex-end;
+    margin-top: auto;
+    margin-bottom: 4rem;
+}
+
+.winnerBox {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    border-radius: 16px;
+    padding: 2rem;
+    text-align: center;
+    flex: 1;
+    max-width: 300px;
+    position: relative;
+}
+
+.firstPlace {
+    transform: translateY(-40px);
+    background: linear-gradient(180deg, rgba(255, 215, 0, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
+    border-color: rgba(255, 215, 0, 0.3);
+}
+
+.secondPlace {
+    background: linear-gradient(180deg, rgba(192, 192, 192, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
+}
+
+.thirdPlace {
+    background: linear-gradient(180deg, rgba(205, 127, 50, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
+}
+
+.medal {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+    filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.3));
+}
+
+.teamName {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: white;
+    margin-bottom: 0.5rem;
+}
+
+.institution {
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+    margin-bottom: 1rem;
+}
+
+.participants {
+    background: rgba(0, 0, 0, 0.3);
+    padding: 0.5rem;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    color: rgba(255, 255, 255, 0.8);
+}
+
+.canvasFooter {
+    text-align: center;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    padding-top: 2rem;
+}
+
+.canvasFooter p {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    margin-bottom: 2rem;
+}
+
+.signatures {
+    display: flex;
+    justify-content: center;
+    gap: 8rem;
+}
+
+.signatures span {
+    font-family: 'Brush Script MT', cursive, serif;
+    font-size: 1.5rem;
+    opacity: 0.5;
+    border-bottom: 1px dashed rgba(255, 255, 255, 0.3);
+    padding-bottom: 0.5rem;
+}
+
+.emptyCard {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    padding: 4rem;
+    text-align: center;
+}
+
+.emptyCard h2 {
+    font-size: 2rem;
+    margin-bottom: 1rem;
+}
+
+.emptyCard p {
+    color: var(--text-secondary);
+    margin-bottom: 2rem;
+}

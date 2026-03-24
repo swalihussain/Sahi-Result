@@ -1,0 +1,74 @@
+{
+  "Navigation": {
+    "home": "Home",
+    "about": "About",
+    "events": "Events",
+    "news": "News",
+    "gallery": "Gallery",
+    "results": "Results",
+    "contact": "Contact",
+    "admin": "Admin"
+  },
+  "Hero": {
+    "title": "Chapparapadavu Sahityotsav",
+    "subtitle": "A Grand Celebration of Literature, Arts, and Culture.",
+    "ctaExplore": "Explore Events",
+    "ctaGallery": "View Gallery"
+  },
+  "About": {
+    "title": "About The Festival",
+    "description": "Chapparapadavu Sahityotsav is a prestigious cultural and literary festival bringing together creative minds, students, and artists from across Kerala.",
+    "statsLegacy": "Years of Legacy",
+    "statsParticipants": "Participants",
+    "statsEvents": "Total Events"
+  },
+  "Events": {
+    "title": "Events & Sessions",
+    "subtitle": "Discover the incredible competitions, talks, and performances lined up for the festival.",
+    "filterAll": "All Events",
+    "filterLiterary": "Literary",
+    "filterCultural": "Cultural",
+    "filterSports": "Sports",
+    "viewDetails": "View Details"
+  },
+  "Gallery": {
+    "title": "Festival Gallery",
+    "subtitle": "A visual journey through the moments, people, and performances of Sahityotsav.",
+    "filterAll": "All Media",
+    "filterStage": "Stage Events",
+    "filterAwards": "Awards",
+    "filterHighlights": "Highlights"
+  },
+  "News": {
+    "title": "News & Updates",
+    "subtitle": "Stay informed with the latest announcements, schedules, and festival highlights.",
+    "readMore": "Read More",
+    "postedOn": "Posted on"
+  },
+  "Contact": {
+    "title": "Get In Touch",
+    "subtitle": "Have a question about the festival? Reach out to the organizing committee.",
+    "name": "Full Name",
+    "email": "Email Address",
+    "phone": "Phone Number",
+    "message": "Your Message",
+    "submit": "Send Message",
+    "addressTitle": "Event Location",
+    "addressText": "Chapparapadavu, Kannur, Kerala 670581",
+    "committeeTitle": "Organizing Committee"
+  },
+  "Results": {
+    "title": "Competition Results",
+    "subtitle": "View and download the official results for all completed events.",
+    "search": "Search events...",
+    "category": "All Categories",
+    "viewResult": "View Result",
+    "comingSoon": "Results Coming Soon"
+  },
+  "AboutPage": {
+    "title": "Sahityotsav",
+    "p1": "Incepted 32 years ago in 1993, it has its commencement from the grassroot level -that is a family Sahityotsav. Crossing the levels of units,sectors, divisions,districts and 26 states in the country, it finds its actualization in the national level each year.",
+    "p2": "As a prime aim,Sahityotsav is focusing on the embellishment of the creativity of thousands and more students across the country, and now it became one of the towering figures in the realm Of cultural festivals of India.",
+    "p3": "Sahityotsav has its assets of thousands of young vibrant studentdom who have came forward to meet the need of the time in its various aspects. They are ready to question all the anti social hullabaloos using their talents like writing, drawing, criticizing... etc."
+  }
+}

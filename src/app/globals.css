@@ -1,0 +1,48 @@
+@import "tailwindcss";
+
+@theme {
+  --color-maroon: #6B0F1A;
+  --color-gold: #D4AF37;
+  --color-gold-light: #FCE883;
+  --color-bg-dark: #0a0a0a;
+
+  --font-serif: var(--font-sora), sans-serif;
+  --font-sans: var(--font-sora), "Sora", sans-serif;
+  --font-malayalam: "Manjari", "Meera", sans-serif;
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-bg-dark text-white font-sans antialiased;
+    background: radial-gradient(circle at top left, rgba(107, 15, 26, 0.15), transparent 50%),
+      radial-gradient(circle at bottom right, rgba(212, 175, 55, 0.1), transparent 50%),
+      #0a0a0a;
+  }
+}
+
+/* Glassmorphism utilities */
+@layer utilities {
+  .glass {
+    @apply bg-white/5 backdrop-blur-md border border-white/10;
+  }
+
+  .glass-card {
+    @apply bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-6 transition-all duration-300 hover:border-gold/50 hover:bg-white/10 shadow-xl;
+  }
+
+  .gold-gradient-text {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-gold-light to-gold;
+  }
+
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}
