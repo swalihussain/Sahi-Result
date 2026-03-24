@@ -44,7 +44,7 @@ export default function ResultDetailsPage() {
         if (typeof window !== 'undefined' && window.navigator.vibrate) {
             window.navigator.vibrate(10);
         }
-        
+
         // If we have custom templates, only cycle through those images
         // No color theme cycling as per user request to only show uploaded templates
         if (templates.length > 1) {
@@ -65,7 +65,7 @@ export default function ResultDetailsPage() {
         const handleResize = () => {
             const viewportWidth = window.innerWidth;
             const viewportHeight = window.innerHeight;
-            
+
             // Allow for header and control buttons gap
             const topOffset = viewportWidth >= 768 ? 200 : 150;
             const horizontalPadding = viewportWidth >= 768 ? 40 : 20;
@@ -73,10 +73,10 @@ export default function ResultDetailsPage() {
 
             const availableWidth = Math.min(viewportWidth - (horizontalPadding * 2), 1080);
             const contentWidth = availableWidth - containerPadding;
-            
+
             const widthScale = contentWidth / 1080;
             const heightScale = (viewportHeight - (topOffset + horizontalPadding)) / 1350;
-            
+
             setContainerScale(Math.min(widthScale, heightScale, 1));
         };
         handleResize();
@@ -103,10 +103,10 @@ export default function ResultDetailsPage() {
                 const compRes = await fetchWithTimeout("/api/competitions");
                 if (!compRes.ok) throw new Error("Competitions fetch failed");
                 const compData = await compRes.json();
-                
+
                 if (Array.isArray(compData)) {
-                   const currentComp = compData.find((c: any) => c.id.toString() === id);
-                   if (currentComp) setCompetition(currentComp);
+                    const currentComp = compData.find((c: any) => c.id.toString() === id);
+                    if (currentComp) setCompetition(currentComp);
                 }
 
                 // Fetch results for this competition
@@ -115,7 +115,7 @@ export default function ResultDetailsPage() {
                 const resData = await resRes.json();
                 if (Array.isArray(resData)) {
                     setWinners(resData);
-                    
+
                     // Parse templates from result_pdf_url
                     const rawPdfUrl = resData.find((w: any) => w.result_pdf_url)?.result_pdf_url;
                     if (rawPdfUrl) {
@@ -140,7 +140,7 @@ export default function ResultDetailsPage() {
         };
 
         fetchData();
-        
+
         fetchWithTimeout('/api/settings')
             .then(res => res.json())
             .then(data => setSettings(data))
@@ -222,9 +222,9 @@ export default function ResultDetailsPage() {
                         className="bg-white text-black w-14 h-14 md:w-16 md:h-16 rounded-2xl flex items-center justify-center hover:scale-110 active:scale-90 transition-all shadow-[0_0_20px_rgba(255,255,255,0.2)] hover:shadow-[0_0_30px_rgba(255,255,255,0.4)] group z-20"
                         title="Change Design Template"
                     >
-                        <ArrowRightLeft 
-                             size={28} 
-                             className={`group-active:rotate-180 transition-transform duration-500 ${templateId % 2 === 0 ? 'rotate-0' : 'rotate-180'}`} 
+                        <ArrowRightLeft
+                            size={28}
+                            className={`group-active:rotate-180 transition-transform duration-500 ${templateId % 2 === 0 ? 'rotate-0' : 'rotate-180'}`}
                         />
                     </button>
 
@@ -295,10 +295,10 @@ export default function ResultDetailsPage() {
                                 const cleanUrl = url.split('?')[0].toLowerCase();
                                 return /\.(jpg|jpeg|png|webp|gif|svg)$/.test(cleanUrl) || url.includes('image');
                             };
-                            
+
                             // Use currently selected template from uploaded ones, or fallback to competition template
-                            const bgUrl = templates.length > 0 
-                                ? templates[bgTemplateIdx] 
+                            const bgUrl = templates.length > 0
+                                ? templates[bgTemplateIdx]
                                 : competition.template_image;
 
                             return bgUrl && isImage(bgUrl) && (
@@ -317,9 +317,9 @@ export default function ResultDetailsPage() {
                             {/* Header Section */}
                             <div className="w-full pl-[60px] pr-[140px] mb-[60px] h-[180px] flex-shrink-0">
                                 {settings?.poster_header && (
-                                    <img 
-                                        src={settings.poster_header} 
-                                        alt="Poster Header" 
+                                    <img
+                                        src={settings.poster_header}
+                                        alt="Poster Header"
                                         className="w-full h-full object-contain object-left"
                                         onError={(e) => (e.currentTarget.style.display = 'none')}
                                     />
@@ -327,14 +327,14 @@ export default function ResultDetailsPage() {
                             </div>
 
                             {/* Metadata Header - Category, Type, and Result Number */}
-                            <div 
+                            <div
                                 id="header-v3"
                                 className={`w-full grid grid-cols-[1fr_auto] items-center pl-[60px] pr-[140px] pb-[60px] border-b-2 mt-[20px]`}
                                 style={{ borderColor: styles.border }}
                             >
                                 <div className="flex flex-col gap-4 max-w-[70%]">
                                     <div className="flex flex-wrap items-center gap-3">
-                                        <span 
+                                        <span
                                             className="font-medium text-[32px] uppercase tracking-[0.2em] opacity-90"
                                             style={{ color: styles.text }}
                                         >
@@ -377,13 +377,13 @@ export default function ResultDetailsPage() {
                                         <div className="mt-4 flex flex-col gap-4 items-center w-10">
                                             {[...Array(winner.position)].map((_, i) => (
                                                 <svg key={i} width="24" height="24" viewBox="0 0 24 24" className="drop-shadow-sm">
-                                                    <path 
-                                                        d="M12 2L2 12l10 10 10-10z" 
+                                                    <path
+                                                        d="M12 2L2 12l10 10 10-10z"
                                                         fill={
                                                             winner.position === 1 ? '#2563eb' :
-                                                            winner.position === 2 ? '#3b82f6' :
-                                                            winner.position === 3 ? '#60a5fa' : '#93c5fd'
-                                                        } 
+                                                                winner.position === 2 ? '#3b82f6' :
+                                                                    winner.position === 3 ? '#60a5fa' : '#93c5fd'
+                                                        }
                                                     />
                                                 </svg>
                                             ))}
@@ -416,9 +416,9 @@ export default function ResultDetailsPage() {
 
                             {/* Branding Footer */}
                             {/* Branding Footer explicitly hidden */}
-                            <div 
+                            <div
                                 id="footer-hidden"
-                                className="mt-auto w-full h-[120px] opacity-0 pointer-events-none" 
+                                className="mt-auto w-full h-[120px] opacity-0 pointer-events-none"
                             />
 
 
