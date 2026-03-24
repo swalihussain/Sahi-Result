@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "sync": "powershell -ExecutionPolicy Bypass -File ./auto-push.ps1"
   },
   "dependencies": {
     "@tailwindcss/postcss": "^4.2.1",
