@@ -11,7 +11,7 @@ export async function DELETE(
     }
 
     try {
-        const { id } = await params;
+        const { id } = params;
         const db = await getDbConnection();
         await db.run('DELETE FROM competitions WHERE id = ?', [id]);
         return NextResponse.json({ success: true });
@@ -29,7 +29,7 @@ export async function PUT(
     }
 
     try {
-        const { id } = await params;
+        const { id } = params;
         const { name, date, category, competition_type, template_image, serial_number, match_number, results_only } = await request.json();
         
         const db = await getDbConnection();
