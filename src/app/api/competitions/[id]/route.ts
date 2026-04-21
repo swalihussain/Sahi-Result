@@ -4,14 +4,14 @@ import { isAdminAuthenticated } from '@/lib/auth';
 
 export async function DELETE(
   request: Request,
-  { params }: { params: { id: string } }
+  context: { params: { id: string } }
 ) {
   if (!(await isAdminAuthenticated())) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   try {
-    const { id } = params;
+    const { id } = context.params;
 
     const db = await getDbConnection();
 
@@ -32,14 +32,14 @@ export async function DELETE(
 
 export async function PUT(
   request: Request,
-  { params }: { params: { id: string } }
+  context: { params: { id: string } }
 ) {
   if (!(await isAdminAuthenticated())) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   try {
-    const { id } = params;
+    const { id } = context.params;
 
     const {
       name,
