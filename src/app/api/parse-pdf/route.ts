@@ -19,7 +19,13 @@ export async function POST(request: Request) {
         const filename = `${new Date().getTime()}-${file.name.replace(/\s+/g, '_')}`;
         const storagePath = `results/${filename}`;
         
-        const { bucket } = await import('@/lib/firebase-admin');
+        const { getStorageBucket } = await import('@/lib/firebase-admin');
+        const bucket = getStorageBucket();
+
+        if (!bucket) {
+            return NextResponse.json({ error: 'Cloud storage is not configured.' }, { status: 500 });
+        }
+
         const fileRef = bucket.file(storagePath);
 
         // Upload to Firebase Storage

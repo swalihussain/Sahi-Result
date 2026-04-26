@@ -1,11 +1,16 @@
 import { NextResponse } from 'next/server';
 import { isAdminAuthenticated } from '@/lib/auth';
-import { bucket } from '@/lib/firebase-admin';
+import { getStorageBucket } from '@/lib/firebase-admin';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
     try {
+        const bucket = getStorageBucket();
+        if (!bucket) {
+            return NextResponse.json({ error: 'Cloud storage is not configured.' }, { status: 500 });
+        }
+
         // List files in the 'gallery' folder
         const [files] = await bucket.getFiles({ prefix: 'gallery/' });
         
@@ -39,9 +44,13 @@ export async function DELETE(request: Request) {
         if (!url || typeof url !== 'string') {
             return NextResponse.json({ error: 'Invalid URL' }, { status: 400 });
         }
+
+        const bucket = getStorageBucket();
+        if (!bucket) {
+            return NextResponse.json({ error: 'Cloud storage is not configured.' }, { status: 500 });
+        }
         
         // Extract the path from the URL
-        // Format: https://storage.googleapis.com/[BUCKET]/[PATH]
         const bucketName = bucket.name;
         const pathPrefix = `https://storage.googleapis.com/${bucketName}/`;
         

@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { isAdminAuthenticated } from '@/lib/auth';
-import { bucket } from '@/lib/firebase-admin';
+import { getStorageBucket } from '@/lib/firebase-admin';
 
 export async function POST(request: Request) {
     if (!await isAdminAuthenticated()) {
@@ -14,6 +14,11 @@ export async function POST(request: Request) {
 
         if (!file) {
             return NextResponse.json({ error: 'No file received.' }, { status: 400 });
+        }
+
+        const bucket = getStorageBucket();
+        if (!bucket) {
+            return NextResponse.json({ error: 'Cloud storage is not configured.' }, { status: 500 });
         }
 
         const bytes = await file.arrayBuffer();
@@ -34,7 +39,6 @@ export async function POST(request: Request) {
         });
 
         // Generate the public URL
-        // Using the direct Google Cloud Storage public URL format
         const fileUrl = `https://storage.googleapis.com/${bucket.name}/${storagePath}`;
 
         return NextResponse.json({ success: true, fileUrl });
