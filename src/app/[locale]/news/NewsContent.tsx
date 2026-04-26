@@ -17,7 +17,11 @@ function NewsContent({ initialTitle, initialSubtitle }: NewsContentProps) {
         fetch('/api/announcements')
             .then(res => res.json())
             .then(data => {
-                setNewsItems(data);
+                if (Array.isArray(data)) {
+                    setNewsItems(data);
+                } else {
+                    setNewsItems([]);
+                }
                 setLoading(false);
             })
             .catch(() => setLoading(false));

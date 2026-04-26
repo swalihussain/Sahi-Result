@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
-import * as motion from 'framer-motion/client';
+import { motion } from 'framer-motion';
 import { X, Play } from 'lucide-react';
 
 export default function GalleryPage() {
@@ -33,6 +33,8 @@ export default function GalleryPage() {
                         };
                     });
                     setUploadedImages(dynamicItems);
+                } else {
+                    setUploadedImages([]);
                 }
             })
             .catch(err => console.error("Failed fetching gallery", err));
@@ -41,10 +43,12 @@ export default function GalleryPage() {
         fetch("/api/settings")
             .then(res => res.json())
             .then(data => {
-                setPageSettings({
-                    title: data.gallery_title || t('title'),
-                    subtitle: data.gallery_subtitle || t('subtitle')
-                });
+                if (data && typeof data === 'object') {
+                    setPageSettings({
+                        title: data.gallery_title || t('title'),
+                        subtitle: data.gallery_subtitle || t('subtitle')
+                    });
+                }
             });
     }, []);
 

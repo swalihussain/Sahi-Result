@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import * as motion from "framer-motion/client";
+import { motion } from "framer-motion";
 import { Users, Building2, ListFilter, ChevronDown } from "lucide-react";
 
 export default function TeamsManager({ showToast }: { showToast: (msg: string, type: 'success' | 'error') => void }) {

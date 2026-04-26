@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Save, Layout, Type, Image as ImageIcon, CheckCircle2, Upload, FileText, User, Trash2, X } from "lucide-react";
-import * as motion from "framer-motion/client";
+import { motion } from "framer-motion";
 
 export default function SettingsManager({ showToast }: { showToast: (msg: string, type: 'success' | 'error') => void }) {
     const [loading, setLoading] = useState(false);

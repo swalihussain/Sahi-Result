@@ -1,10 +1,6 @@
 import { NextResponse } from 'next/server';
-import { getDbConnection, initDb } from '@/lib/db';
+import { getDbConnection } from '@/lib/db';
 const PDFParser = require('pdf2json');
-import fs from 'fs/promises';
-import path from 'path';
-
-initDb().catch(console.error);
 
 export async function POST(request: Request) {
     try {
@@ -16,16 +12,25 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Missing file or competition ID' }, { status: 400 });
         }
 
-        // Process File specific logic to save PDF locally for URL linking
+        // Process File specific logic to save PDF to cloud for URL linking
         const arrayBuffer = await file.arrayBuffer();
         const buffer = Buffer.from(arrayBuffer);
 
         const filename = `${new Date().getTime()}-${file.name.replace(/\s+/g, '_')}`;
-        const uploadDir = path.join(process.cwd(), 'public', 'uploads');
-        await fs.mkdir(uploadDir, { recursive: true });
-        const filePath = path.join(uploadDir, filename);
-        await fs.writeFile(filePath, buffer);
-        const result_pdf_url = `/uploads/${filename}`;
+        const storagePath = `results/${filename}`;
+        
+        const { bucket } = await import('@/lib/firebase-admin');
+        const fileRef = bucket.file(storagePath);
+
+        // Upload to Firebase Storage
+        await fileRef.save(buffer, {
+            metadata: {
+                contentType: file.type || 'application/pdf',
+            },
+            public: true,
+        });
+
+        const result_pdf_url = `https://storage.googleapis.com/${bucket.name}/${storagePath}`;
 
         // Extract Text natively from the PDF utilizing pdf2json
         const extractText = (): Promise<string> => {

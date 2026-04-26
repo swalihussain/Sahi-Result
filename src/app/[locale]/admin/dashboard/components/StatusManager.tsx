@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import * as motion from "framer-motion/client";
+import { motion } from "framer-motion";
 import { Edit3, Trophy, Save, RotateCcw } from "lucide-react";
 
 export default function StatusManager({ showToast }: { showToast: (msg: string, type: 'success' | 'error') => void }) {

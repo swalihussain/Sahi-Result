@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
-import { writeFile, mkdir } from 'fs/promises';
-import path from 'path';
 import { isAdminAuthenticated } from '@/lib/auth';
+import { bucket } from '@/lib/firebase-admin';
 
 export async function POST(request: Request) {
     if (!await isAdminAuthenticated()) {
@@ -11,7 +10,7 @@ export async function POST(request: Request) {
     try {
         const formData = await request.formData();
         const file = formData.get('file') as File | null;
-        const folder = formData.get('folder') as string | null;
+        const folder = formData.get('folder') as string || 'uploads';
 
         if (!file) {
             return NextResponse.json({ error: 'No file received.' }, { status: 400 });
@@ -22,31 +21,25 @@ export async function POST(request: Request) {
 
         // Create a unique filename
         const filename = `${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.]/g, '_')}`;
+        const storagePath = `${folder}/${filename}`;
         
-        // Determine upload directory
-        let uploadDir = path.join(process.cwd(), 'public/uploads');
-        let relativePath = '/uploads';
+        const fileRef = bucket.file(storagePath);
 
-        if (folder && ['gallery', 'events', 'settings'].includes(folder)) {
-            uploadDir = path.join(uploadDir, folder);
-            relativePath = `/uploads/${folder}`;
-            
-            // Ensure subfolder exists
-            try {
-                await mkdir(uploadDir, { recursive: true });
-            } catch (e) {
-                // Ignore if exists
-            }
-        }
+        // Upload to Firebase Storage
+        await fileRef.save(buffer, {
+            metadata: {
+                contentType: file.type,
+            },
+            public: true, // Make publicly accessible
+        });
 
-        const filepath = path.join(uploadDir, filename);
+        // Generate the public URL
+        // Using the direct Google Cloud Storage public URL format
+        const fileUrl = `https://storage.googleapis.com/${bucket.name}/${storagePath}`;
 
-        // Write file
-        await writeFile(filepath, buffer);
-
-        return NextResponse.json({ success: true, fileUrl: `${relativePath}/${filename}` });
+        return NextResponse.json({ success: true, fileUrl });
     } catch (error) {
         console.error("Upload error:", error);
-        return NextResponse.json({ error: 'Failed to upload file.' }, { status: 500 });
+        return NextResponse.json({ error: 'Failed to upload file to cloud storage.' }, { status: 500 });
     }
 }

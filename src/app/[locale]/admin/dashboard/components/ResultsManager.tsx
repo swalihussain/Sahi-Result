@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import * as motion from "framer-motion/client";
+import { motion } from "framer-motion";
 import { ArrowLeft, Download, Trophy, ArrowRightLeft, Share2, X, Award, ChevronDown, Save, Edit3, Plus, ListPlus, Check, PlusCircle, Trash2 } from 'lucide-react';
 import { PRESET_PROGRAMS, CATEGORIES } from '@/lib/constants';
 
@@ -46,6 +46,10 @@ export default function ResultsManager({ showToast }: { showToast: (msg: string,
         fetch("/api/competitions").then(res => res.json()).then(data => setCompetitions(data));
         fetch("/api/teams").then(res => res.json()).then(data => setTeams(data));
         fetch("/api/results").then(res => res.json()).then(data => {
+            if (!Array.isArray(data)) {
+                setPublishedResults([]);
+                return;
+            }
             // Group by competition
             const grouped = data.reduce((acc: any[], current: any) => {
                 let existing = acc.find((item: any) => String(item.competition_id) === String(current.competition_id));

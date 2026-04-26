@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import * as motion from 'framer-motion/client';
+import { motion, AnimatePresence } from 'framer-motion';
 import { LayoutDashboard, Users, Trophy, LogOut, Settings, Bell, Upload, CalendarDays, Award, Mail, Menu, X as CloseIcon } from 'lucide-react';
 import { Link } from '@/i18n/routing';
 import EventsManager from './components/EventsManager';
@@ -180,7 +180,10 @@ export default function AdminDashboard() {
                             target="_blank"
                             className="w-full md:w-auto px-6 py-3 bg-white/5 hover:bg-white/10 rounded-xl text-xs font-bold tracking-widest text-gray-300 hover:text-white border border-white/10 hover:border-gold/30 transition-all flex items-center justify-center gap-3 uppercase"
                         >
-                            <ArrowUpRight size={14} /> View Live Site
+                            <svg xmlns="http://www.w3.org/2000/svg" width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M7 7h10v10" /><path d="M7 17 17 7" />
+                            </svg>
+                            View Live Site
                         </Link>
                     </header>
 
@@ -208,8 +211,3 @@ export default function AdminDashboard() {
     );
 }
 
-const ArrowUpRight = ({ size }: { size: number }) => (
-    <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M7 7h10v10" /><path d="M7 17 17 7" />
-    </svg>
-);

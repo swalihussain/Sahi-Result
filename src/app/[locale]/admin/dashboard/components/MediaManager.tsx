@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import * as motion from "framer-motion/client";
+import { motion } from "framer-motion";
 import { Upload, Image as ImageIcon, Copy, Check, Trash2, Edit3, Save } from "lucide-react";
 
 export default function MediaManager({ showToast }: { showToast: (msg: string, type: 'success' | 'error') => void }) {

@@ -1,5 +1,7 @@
+"use client";
+
 import { useState, useEffect } from "react";
-import * as motion from "framer-motion/client";
+import { motion } from "framer-motion";
 import { PlusCircle, Calendar, Image as ImageIcon, Trash2, Edit2, X, Save, Edit3 } from "lucide-react";
 
 interface Competition {
@@ -70,7 +72,7 @@ export default function EventsManager({ showToast }: { showToast: (msg: string, 
             const res = await fetch("/api/competitions");
             if (res.ok) {
                 const data = await res.json();
-                setCompetitions(data);
+                setCompetitions(Array.isArray(data) ? data : []);
             }
         } catch (error) {
             console.error("Failed to fetch events", error);

@@ -3,8 +3,6 @@ import { getDbConnection, initDb } from '@/lib/db';
 import { isAdminAuthenticated } from '@/lib/auth';
 
 // Ensure DB is initialized before first API call
-initDb().catch(console.error);
-
 export async function GET() {
     try {
         const db = await getDbConnection();

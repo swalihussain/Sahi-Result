@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Mail, Trash2, CheckCircle, Clock, Search, MessageSquare, Phone, User, Send, MessageCircle } from "lucide-react";
-import * as motion from "framer-motion/client";
+import { motion } from "framer-motion";
 import { AnimatePresence } from "framer-motion";
 
 interface Message {

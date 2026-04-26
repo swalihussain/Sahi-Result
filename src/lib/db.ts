@@ -6,19 +6,36 @@ import path from 'path';
 const dbPath = path.join(process.cwd(), 'database.sqlite');
 
 let dbInstance: Database | null = null;
+let isInitialized = false;
 
 /**
  * Open a connection to the SQLite database
  */
 export async function getDbConnection() {
-  if (dbInstance) return dbInstance;
+  try {
+    if (dbInstance && isInitialized) return dbInstance;
 
-  dbInstance = await open({
-    filename: dbPath,
-    driver: sqlite3.Database,
-  });
+    if (!dbInstance) {
+      dbInstance = await open({
+        filename: dbPath,
+        driver: sqlite3.Database,
+      });
+    }
 
-  return dbInstance;
+    if (!isInitialized) {
+      await initDb();
+      isInitialized = true;
+    }
+
+    return dbInstance;
+  } catch (error) {
+    console.error("Database connection error:", error);
+    // If it's a read-only filesystem error (common on Vercel), log it specifically
+    if (String(error).includes('READONLY')) {
+      console.warn("Detected Read-Only filesystem. SQLite changes will not persist. Use a remote DB like Turso for Vercel.");
+    }
+    throw error;
+  }
 }
 
 /**
@@ -27,6 +44,7 @@ export async function getDbConnection() {
 export async function initDb() {
   const db = await getDbConnection();
 
+  // Create competitions table
   await db.exec(`
     CREATE TABLE IF NOT EXISTS competitions (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -38,20 +56,30 @@ export async function initDb() {
       competition_type TEXT,
       template_image TEXT,
       description TEXT,
+      results_only INTEGER DEFAULT 0,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
   `);
 
-  // Migrations for existing DBs
-  const columns = ['serial_number', 'match_number', 'competition_type', 'template_image', 'description'];
-  for (const col of columns) {
+  // Migrations for competitions
+  const compColumns = [
+    { name: 'serial_number', type: 'TEXT' },
+    { name: 'match_number', type: 'TEXT' },
+    { name: 'competition_type', type: 'TEXT' },
+    { name: 'template_image', type: 'TEXT' },
+    { name: 'description', type: 'TEXT' },
+    { name: 'results_only', type: 'INTEGER DEFAULT 0' }
+  ];
+  
+  for (const col of compColumns) {
     try {
-      await db.exec(`ALTER TABLE competitions ADD COLUMN ${col} TEXT`);
+      await db.exec(`ALTER TABLE competitions ADD COLUMN ${col.name} ${col.type}`);
     } catch (e) {
-      // Column already exists or other harmless error
+      // Column already exists
     }
   }
 
+  // Create other tables
   await db.exec(`
     CREATE TABLE IF NOT EXISTS teams (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -61,6 +89,11 @@ export async function initDb() {
       total_points INTEGER DEFAULT 0,
       wins INTEGER DEFAULT 0,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE TABLE IF NOT EXISTS unit_points (
+      institution TEXT PRIMARY KEY,
+      points INTEGER DEFAULT 0
     );
 
     CREATE TABLE IF NOT EXISTS results (
@@ -103,6 +136,15 @@ export async function initDb() {
     INSERT OR IGNORE INTO settings (key, value) VALUES ('points_heading', '🏆 Final Status');
   `);
 
+  // Ensure unit_points has data from teams if empty
+  const unitCount = await db.get('SELECT COUNT(*) as count FROM unit_points');
+  if (unitCount.count === 0) {
+    await db.exec(`
+      INSERT OR IGNORE INTO unit_points (institution, points)
+      SELECT institution, SUM(total_points) as points FROM teams GROUP BY institution
+    `);
+  }
+
   console.log('Database initialized successfully.');
 }
 
@@ -110,9 +152,13 @@ export async function initDb() {
 export async function dropTables() {
   const db = await getDbConnection();
   await db.exec(`
+    DROP TABLE IF EXISTS unit_points;
     DROP TABLE IF EXISTS announcements;
     DROP TABLE IF EXISTS results;
     DROP TABLE IF EXISTS competitions;
     DROP TABLE IF EXISTS teams;
+    DROP TABLE IF EXISTS messages;
+    DROP TABLE IF EXISTS settings;
   `);
+  isInitialized = false;
 }

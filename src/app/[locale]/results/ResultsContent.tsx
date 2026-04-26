@@ -28,6 +28,10 @@ function ResultsContent({ initialTitle, initialSubtitle, initialTableHeading }: 
         fetch('/api/results')
             .then(res => res.json())
             .then(data => {
+                if (!Array.isArray(data)) {
+                    setResultsData([]);
+                    return;
+                }
                 // Group individual result rows by competition
                 const grouped = data.reduce((acc: any[], current: any) => {
                     let existing = acc.find(item => String(item.competition_id) === String(current.competition_id));

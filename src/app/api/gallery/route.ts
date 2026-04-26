@@ -1,36 +1,30 @@
 import { NextResponse } from 'next/server';
-import { readdir, unlink, mkdir } from 'fs/promises';
-import path from 'path';
 import { isAdminAuthenticated } from '@/lib/auth';
+import { bucket } from '@/lib/firebase-admin';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
     try {
-        const galleryDir = path.join(process.cwd(), 'public/uploads/gallery');
-        let files: string[] = [];
-        try {
-            files = await readdir(galleryDir);
-        } catch (e) {
-            // Directory might not exist yet, try creating it
-            try {
-                await mkdir(galleryDir, { recursive: true });
-            } catch (err) {}
-            return NextResponse.json([]);
-        }
-
-        // Sort files to show newest first
-        files.sort((a, b) => b.localeCompare(a));
+        // List files in the 'gallery' folder
+        const [files] = await bucket.getFiles({ prefix: 'gallery/' });
         
-        // Filter only images and videos
+        // Map to public URLs
         const imageUrls = files
-            .filter(filename => /\.(jpg|jpeg|png|gif|webp|svg|mp4|webm|ogg)$/i.test(filename))
-            .map(filename => `/uploads/gallery/${filename}`);
+            .filter(file => /\.(jpg|jpeg|png|gif|webp|svg|mp4|webm|ogg)$/i.test(file.name))
+            .map(file => `https://storage.googleapis.com/${bucket.name}/${file.name}`);
+
+        // Sort by name (which starts with timestamp) to show newest first
+        imageUrls.sort((a, b) => {
+            const nameA = a.split('/').pop() || '';
+            const nameB = b.split('/').pop() || '';
+            return nameB.localeCompare(nameA);
+        });
 
         return NextResponse.json(imageUrls);
     } catch (error) {
         console.error('Gallery error:', error);
-        return NextResponse.json({ error: 'Failed to load gallery' }, { status: 500 });
+        return NextResponse.json({ error: 'Failed to load cloud gallery' }, { status: 500 });
     }
 }
 
@@ -42,22 +36,27 @@ export async function DELETE(request: Request) {
     try {
         const { url } = await request.json();
         
-        if (!url || typeof url !== 'string' || !url.startsWith('/uploads/gallery/')) {
+        if (!url || typeof url !== 'string') {
             return NextResponse.json({ error: 'Invalid URL' }, { status: 400 });
         }
         
-        const filename = url.replace('/uploads/gallery/', '');
-        const filePath = path.join(process.cwd(), 'public/uploads/gallery', filename);
+        // Extract the path from the URL
+        // Format: https://storage.googleapis.com/[BUCKET]/[PATH]
+        const bucketName = bucket.name;
+        const pathPrefix = `https://storage.googleapis.com/${bucketName}/`;
         
-        // Basic security check
-        if (filePath.indexOf(path.join(process.cwd(), 'public/uploads/gallery')) !== 0) {
-            return NextResponse.json({ error: 'Invalid path' }, { status: 400 });
+        if (!url.startsWith(pathPrefix)) {
+            return NextResponse.json({ error: 'URL does not match cloud storage bucket' }, { status: 400 });
         }
         
-        await unlink(filePath);
+        const storagePath = url.replace(pathPrefix, '');
+        
+        // Delete the file
+        await bucket.file(storagePath).delete();
+        
         return NextResponse.json({ success: true });
     } catch (error) {
         console.error('Delete error:', error);
-        return NextResponse.json({ error: 'Failed to delete file' }, { status: 500 });
+        return NextResponse.json({ error: 'Failed to delete file from cloud' }, { status: 500 });
     }
 }

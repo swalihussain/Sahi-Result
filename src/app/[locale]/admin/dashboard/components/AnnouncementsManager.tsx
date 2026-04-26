@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import * as motion from "framer-motion/client";
+import { motion } from "framer-motion";
 import { Bell, MapPin, CalendarClock, Trash2, Radio, Edit3, Save } from "lucide-react";
 
 export default function AnnouncementsManager({ showToast }: { showToast: (msg: string, type: 'success' | 'error') => void }) {
@@ -22,7 +22,8 @@ export default function AnnouncementsManager({ showToast }: { showToast: (msg: s
     const fetchAnnouncements = async () => {
         const res = await fetch("/api/announcements");
         if (res.ok) {
-            setAnnouncements(await res.json());
+            const data = await res.json();
+            setAnnouncements(Array.isArray(data) ? data : []);
         }
     };
 
