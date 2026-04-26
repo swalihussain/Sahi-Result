@@ -1,20 +1,24 @@
 import { NextResponse } from 'next/server';
-import { getDbConnection } from '@/lib/db';
+import { getFirestore } from '@/lib/firebase-admin';
 import { isAdminAuthenticated } from '@/lib/auth';
 
 export async function POST(request: Request) {
     try {
-        const { name, phone, email, message } = await request.json();
+        const data = await request.json();
+        const { name, email, message } = data;
 
         if (!name || !email || !message) {
             return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
         }
 
-        const db = await getDbConnection();
-        await db.run(
-            'INSERT INTO messages (name, phone, email, message) VALUES (?, ?, ?, ?)',
-            [name, phone, email, message]
-        );
+        const firestore = getFirestore();
+        if (!firestore) return NextResponse.json({ error: 'Firestore not configured' }, { status: 500 });
+
+        await firestore.collection('messages').add({
+            ...data,
+            status: 'New',
+            created_at: new Date().toISOString()
+        });
 
         return NextResponse.json({ success: true });
     } catch (error) {
@@ -29,8 +33,12 @@ export async function GET() {
     }
 
     try {
-        const db = await getDbConnection();
-        const messages = await db.all('SELECT * FROM messages ORDER BY created_at DESC');
+        const firestore = getFirestore();
+        if (!firestore) return NextResponse.json({ error: 'Firestore not configured' }, { status: 500 });
+
+        const snapshot = await firestore.collection('messages').orderBy('created_at', 'desc').get();
+        const messages = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        
         return NextResponse.json(messages);
     } catch (error) {
         console.error('Messages fetch error:', error);
@@ -45,8 +53,10 @@ export async function PATCH(request: Request) {
 
     try {
         const { id, status } = await request.json();
-        const db = await getDbConnection();
-        await db.run('UPDATE messages SET status = ? WHERE id = ?', [status, id]);
+        const firestore = getFirestore();
+        if (!firestore) return NextResponse.json({ error: 'Firestore not configured' }, { status: 500 });
+
+        await firestore.collection('messages').doc(id).update({ status });
         return NextResponse.json({ success: true });
     } catch (error) {
         console.error('Message update error:', error);
@@ -62,8 +72,13 @@ export async function DELETE(request: Request) {
     try {
         const { searchParams } = new URL(request.url);
         const id = searchParams.get('id');
-        const db = await getDbConnection();
-        await db.run('DELETE FROM messages WHERE id = ?', [id]);
+        
+        const firestore = getFirestore();
+        if (!firestore) return NextResponse.json({ error: 'Firestore not configured' }, { status: 500 });
+
+        if (!id) return NextResponse.json({ error: 'Missing ID' }, { status: 400 });
+
+        await firestore.collection('messages').doc(id).delete();
         return NextResponse.json({ success: true });
     } catch (error) {
         console.error('Message delete error:', error);

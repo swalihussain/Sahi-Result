@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getDbConnection } from '@/lib/db';
+import { getFirestore } from '@/lib/firebase-admin';
 import { isAdminAuthenticated } from '@/lib/auth';
 
 export async function DELETE(
@@ -12,21 +12,15 @@ export async function DELETE(
 
   try {
     const { id } = await params;
+    const firestore = getFirestore();
+    if (!firestore) return NextResponse.json({ error: 'Firestore not configured' }, { status: 500 });
 
-    const db = await getDbConnection();
-
-    await db.run(
-      'DELETE FROM competitions WHERE id = ?',
-      [id]
-    );
+    await firestore.collection('competitions').doc(id).delete();
 
     return NextResponse.json({ success: true });
-
   } catch (error) {
-    return NextResponse.json(
-      { error: 'Failed to delete competition' },
-      { status: 500 }
-    );
+    console.error('Firestore competition DELETE error:', error);
+    return NextResponse.json({ error: 'Failed to delete competition' }, { status: 500 });
   }
 }
 
@@ -40,50 +34,19 @@ export async function PUT(
 
   try {
     const { id } = await params;
+    const data = await request.json();
 
-    const {
-      name,
-      date,
-      category,
-      competition_type,
-      template_image,
-      serial_number,
-      match_number,
-      results_only
-    } = await request.json();
+    const firestore = getFirestore();
+    if (!firestore) return NextResponse.json({ error: 'Firestore not configured' }, { status: 500 });
 
-    const db = await getDbConnection();
-
-    await db.run(
-      `UPDATE competitions 
-       SET name = ?, 
-           date = ?, 
-           category = ?, 
-           competition_type = ?, 
-           template_image = ?, 
-           serial_number = ?, 
-           match_number = ?, 
-           results_only = ?
-       WHERE id = ?`,
-      [
-        name,
-        date,
-        category,
-        competition_type || null,
-        template_image,
-        serial_number || null,
-        match_number || null,
-        results_only || 0,
-        id
-      ]
-    );
+    await firestore.collection('competitions').doc(id).update({
+        ...data,
+        updated_at: new Date().toISOString()
+    });
 
     return NextResponse.json({ success: true });
-
   } catch (error) {
-    return NextResponse.json(
-      { error: 'Failed to update competition' },
-      { status: 500 }
-    );
+    console.error('Firestore competition PUT error:', error);
+    return NextResponse.json({ error: 'Failed to update competition' }, { status: 500 });
   }
 }

@@ -1,16 +1,16 @@
 import { NextResponse } from 'next/server';
-import { getDbConnection, initDb } from '@/lib/db';
+import { getFirestore } from '@/lib/firebase-admin';
 import { isAdminAuthenticated } from '@/lib/auth';
 
 export async function GET() {
     try {
-        const db = await getDbConnection();
-        const settings = await db.all('SELECT * FROM settings');
-        
-        // Convert to key-value object
+        const firestore = getFirestore();
+        if (!firestore) return NextResponse.json({ error: 'Firestore not configured' }, { status: 500 });
+
+        const snapshot = await firestore.collection('settings').get();
         const settingsMap: Record<string, string> = {};
-        settings.forEach(s => {
-            settingsMap[s.key] = s.value;
+        snapshot.docs.forEach(doc => {
+            settingsMap[doc.id] = doc.data().value;
         });
         
         return NextResponse.json(settingsMap);
@@ -27,15 +27,15 @@ export async function POST(request: Request) {
 
     try {
         const data = await request.json();
-        const db = await getDbConnection();
+        const firestore = getFirestore();
+        if (!firestore) return NextResponse.json({ error: 'Firestore not configured' }, { status: 500 });
         
-        // Data should be an object of key-value pairs
+        const batch = firestore.batch();
         for (const [key, value] of Object.entries(data)) {
-            await db.run(
-                'INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value',
-                [key, String(value)]
-            );
+            const docRef = firestore.collection('settings').doc(key);
+            batch.set(docRef, { value: String(value) });
         }
+        await batch.commit();
         
         return NextResponse.json({ success: true });
     } catch (error) {

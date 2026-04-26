@@ -43,4 +43,11 @@ export const getStorageBucket = () => {
     return firebaseAdmin.storage().bucket();
 };
 
+// Export a getter for Firestore
+export const getFirestore = () => {
+    const firebaseAdmin = getFirebaseAdmin();
+    if (!firebaseAdmin) return null;
+    return firebaseAdmin.firestore();
+};
+
 export default getFirebaseAdmin;
