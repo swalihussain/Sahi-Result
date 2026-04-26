@@ -1,25 +1,30 @@
-import { getDbConnection } from '@/lib/db';
+import { getFirestore } from '@/lib/firebase-admin';
 import { getTranslations } from 'next-intl/server';
-import { cookies } from 'next/headers';
 import EventsList from './EventsList';
 
 export default async function EventsPage() {
     const t = await getTranslations('Events');
     
-    // Fetch dynamic settings
+    // Fetch dynamic settings and competitions from Firestore
     let dynamicSettings: Record<string, string> = {};
     let competitions: any[] = [];
     
     try {
-        const db = await getDbConnection();
-        const settingsRows = await db.all('SELECT * FROM settings');
-        settingsRows.forEach(row => {
-            dynamicSettings[row.key] = row.value;
-        });
-        
-        competitions = await db.all('SELECT * FROM competitions WHERE results_only = 0 ORDER BY date ASC');
+        const firestore = getFirestore();
+        if (firestore) {
+            const settingsSnap = await firestore.collection('settings').get();
+            settingsSnap.docs.forEach(doc => {
+                dynamicSettings[doc.id] = doc.data().value;
+            });
+            
+            const compsSnap = await firestore.collection('competitions')
+                .where('results_only', '==', 0)
+                .orderBy('date', 'asc')
+                .get();
+            competitions = compsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        }
     } catch (e) {
-        console.error("Events fetch failed", e);
+        console.error("Events Firestore fetch failed", e);
     }
 
     const pageTitle = dynamicSettings.events_title || t('title');
@@ -29,7 +34,7 @@ export default async function EventsPage() {
         <EventsList 
             initialTitle={pageTitle}
             initialSubtitle={pageSubtitle}
-            events={competitions.filter(c => !c.results_only)}
+            events={competitions}
             translations={{
                 filterAll: t('filterAll'),
                 filterLiterary: t('filterLiterary'),

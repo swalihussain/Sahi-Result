@@ -5,7 +5,7 @@ import { getMessages } from 'next-intl/server';
 import { headers } from 'next/headers';
 import '../globals.css';
 import Navigation from '@/components/Navigation';
-import { getDbConnection } from '@/lib/db';
+import { getFirestore } from '@/lib/firebase-admin';
 
 const sora = Sora({ 
   subsets: ['latin'], 
@@ -32,18 +32,20 @@ export default async function RootLayout({
   const pathname = headersList.get('x-pathname') || headersList.get('x-invoke-path') || '';
   const isAdmin = pathname.includes('/admin');
 
-  // Fetch dynamic settings
+  // Fetch dynamic settings from Firestore
   let siteLogo = "/logo.png";
   let footerText = "© 2026 Chapparapadavu Sahityotsav. All rights reserved.";
   try {
-      const db = await getDbConnection();
-      const logoSetting = await db.get('SELECT value FROM settings WHERE key = "site_logo"');
-      if (logoSetting) siteLogo = logoSetting.value;
-      
-      const footerSetting = await db.get('SELECT value FROM settings WHERE key = "footer_text"');
-      if (footerSetting) footerText = footerSetting.value;
+      const firestore = getFirestore();
+      if (firestore) {
+          const logoDoc = await firestore.collection('settings').doc('site_logo').get();
+          if (logoDoc.exists) siteLogo = logoDoc.data()?.value || siteLogo;
+          
+          const footerDoc = await firestore.collection('settings').doc('footer_text').get();
+          if (footerDoc.exists) footerText = footerDoc.data()?.value || footerText;
+      }
   } catch (e) {
-      console.error("Layout content fetch failed", e);
+      console.error("Layout Firestore content fetch failed", e);
   }
 
   return (
@@ -52,7 +54,6 @@ export default async function RootLayout({
         <NextIntlClientProvider messages={messages} locale={locale}>
           {!isAdmin && <Navigation logoUrl={siteLogo} />}
           {children}
-          {/* Base Footer (Hidden for admin dashboard) */}
           {!isAdmin && (
             <footer className="mt-auto py-8 border-t border-white/10 text-center text-sm text-gray-500">
               {footerText}

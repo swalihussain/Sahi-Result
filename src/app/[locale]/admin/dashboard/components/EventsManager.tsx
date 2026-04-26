@@ -134,7 +134,8 @@ export default function EventsManager({ showToast }: { showToast: (msg: string, 
                     const uploadResult = await uploadRes.json();
                     fileUrl = uploadResult.fileUrl;
                 } else {
-                    showToast("Failed to upload image", "error");
+                    const errorData = await uploadRes.json();
+                    showToast(errorData.error || "Failed to upload image", "error");
                     setLoading(false);
                     return;
                 }
@@ -154,7 +155,8 @@ export default function EventsManager({ showToast }: { showToast: (msg: string, 
                 resetForm();
                 fetchCompetitions();
             } else {
-                showToast("Failed to save event", "error");
+                const errorData = await res.json();
+                showToast(errorData.error || "Failed to save event", "error");
             }
         } catch {
             showToast("A network error occurred", "error");

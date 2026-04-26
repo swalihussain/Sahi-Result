@@ -1,18 +1,20 @@
-import { getDbConnection } from '@/lib/db';
+import { getFirestore } from '@/lib/firebase-admin';
 import { getTranslations } from 'next-intl/server';
-import ResultsContent from './';
+import ResultsContent from './ResultsContent';
 
 export default async function ResultsPage() {
     const t = await getTranslations('Results');
     
-    // Fetch dynamic settings
+    // Fetch dynamic settings from Firestore
     let dynamicSettings: Record<string, string> = {};
     try {
-        const db = await getDbConnection();
-        const settingsRows = await db.all('SELECT * FROM settings');
-        settingsRows.forEach(row => {
-            dynamicSettings[row.key] = row.value;
-        });
+        const firestore = getFirestore();
+        if (firestore) {
+            const snapshot = await firestore.collection('settings').get();
+            snapshot.docs.forEach(doc => {
+                dynamicSettings[doc.id] = doc.data().value;
+            });
+        }
     } catch (e) {
         console.error("Results settings fetch failed", e);
     }

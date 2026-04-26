@@ -79,16 +79,17 @@ export default function MediaManager({ showToast }: { showToast: (msg: string, t
                 body: formData,
             });
 
+            const data = await res.json();
+
             if (res.ok) {
-                const data = await res.json();
                 setUploadedUrl(data.fileUrl);
                 showToast("Media uploaded successfully!", "success");
                 setFile(null);
                 fetchGallery(); // refresh gallery
             } else {
-                showToast("Failed to upload media", "error");
+                showToast(data.error || "Failed to upload media", "error");
             }
-        } catch {
+        } catch (err) {
             showToast("A network error occurred", "error");
         } finally {
             setLoading(false);

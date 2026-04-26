@@ -121,8 +121,11 @@ export default function ResultsManager({ showToast }: { showToast: (msg: string,
                     if (uploadRes.ok) {
                         const result = await uploadRes.json();
                         return result.fileUrl;
+                    } else {
+                        const errorData = await uploadRes.json();
+                        showToast(errorData.error || `Failed to upload ${file.name}`, "error");
+                        return null;
                     }
-                    return null;
                 });
 
                 const uploadedUrls = await Promise.all(uploadPromises);
@@ -134,7 +137,8 @@ export default function ResultsManager({ showToast }: { showToast: (msg: string,
             // to avoid "position already taken" errors from the backend.
             const deleteRes = await fetch(`/api/results?competition_id=${formData.competition_id}`, { method: "DELETE" });
             if (!deleteRes.ok && deleteRes.status !== 404) {
-                 showToast("Failed to clear previous results", "error");
+                 const errorData = await deleteRes.json();
+                 showToast(errorData.error || "Failed to clear previous results", "error");
                  setLoading(false);
                  return;
             }

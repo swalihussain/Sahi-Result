@@ -1,20 +1,22 @@
 import { getTranslations } from 'next-intl/server';
 import * as motion from 'framer-motion/client';
-import { getDbConnection } from '@/lib/db';
+import { getFirestore } from '@/lib/firebase-admin';
 import { Link } from '@/i18n/routing';
 
 export default async function Home() {
   const t = await getTranslations('Hero');
   const tAbout = await getTranslations('About');
 
-  // Fetch dynamic settings from DB
+  // Fetch dynamic settings from Firestore
   let dynamicSettings: Record<string, string> = {};
   try {
-      const db = await getDbConnection();
-      const settingsRows = await db.all('SELECT * FROM settings');
-      settingsRows.forEach(row => {
-          dynamicSettings[row.key] = row.value;
-      });
+      const firestore = getFirestore();
+      if (firestore) {
+          const snapshot = await firestore.collection('settings').get();
+          snapshot.docs.forEach(doc => {
+              dynamicSettings[doc.id] = doc.data().value;
+          });
+      }
   } catch (e) {
       console.error("Home settings fetch failed", e);
   }
@@ -34,8 +36,6 @@ export default async function Home() {
   const stat2Label = dynamicSettings.stat_2_label || "States Covered";
   const stat3Number = dynamicSettings.stat_3_number || "5K+";
   const stat3Label = dynamicSettings.stat_3_label || tAbout('statsParticipants');
-
-  console.log("DEBUG: Program Schedule PDF Path:", programSchedulePdf);
 
   return (
     <div className="min-h-screen overflow-x-hidden">
