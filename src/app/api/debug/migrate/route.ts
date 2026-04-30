@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+// @ts-ignore
 import { Client } from 'pg';
 import fs from 'fs';
 import path from 'path';
