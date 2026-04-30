@@ -15,11 +15,52 @@ const sora = Sora({
 });
 
 export const metadata: Metadata = {
-  title: 'Chapparapadavu Sahityotsav | Cultural Festival',
+  metadataBase: new URL('https://sahi-result.onrender.com'),
+  title: {
+    default: 'Chapparapadavu Sahityotsav | Cultural Festival',
+    template: '%s | Chapparapadavu Sahityotsav'
+  },
   description: 'Official website for the grand Chapparapadavu Sahityotsav. View events, latest news, live results, and cultural highlights.',
+  keywords: ['Chapparapadavu', 'Sahityotsav', 'Cultural Festival', 'Arts Fest', 'Kerala', 'Live Results', 'Events', 'SSF'],
+  authors: [{ name: 'Chapparapadavu Sahityotsav' }],
+  creator: 'Chapparapadavu Sahityotsav',
+  openGraph: {
+    type: 'website',
+    locale: 'en_US',
+    url: 'https://sahi-result.onrender.com',
+    title: 'Chapparapadavu Sahityotsav | Cultural Festival',
+    description: 'Official website for the grand Chapparapadavu Sahityotsav. View events, latest news, live results, and cultural highlights.',
+    siteName: 'Chapparapadavu Sahityotsav',
+    images: [
+      {
+        url: '/poster.jpg',
+        width: 1200,
+        height: 630,
+        alt: 'Chapparapadavu Sahityotsav Poster',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Chapparapadavu Sahityotsav | Cultural Festival',
+    description: 'Official website for the grand Chapparapadavu Sahityotsav. View events, latest news, live results, and cultural highlights.',
+    images: ['/poster.jpg'],
+  },
   icons: {
     icon: '/favicon.ico?v=2',
-  }
+    apple: '/logo.png',
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
 };
 
 export const revalidate = 60; // Cache pages for 60 seconds to support 100k+ concurrent users
