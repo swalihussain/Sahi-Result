@@ -35,6 +35,6 @@ export default function middleware(request: NextRequest) {
 
 export const config = {
     // Match only internationalized pathnames + admin dash
-    // EXCLUDE api, _next, uploads, assets, etc.
-    matcher: ['/((?!api|_next/static|_next/image|uploads|favicon.ico).*)']
+    // EXCLUDE api, _next, uploads, and all static files with extensions (like .png, .jpg)
+    matcher: ['/((?!api|_next/static|_next/image|uploads|.*\\..*).*)']
 };
