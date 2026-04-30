@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { LayoutDashboard, Users, Trophy, LogOut, Settings, Bell, Upload, CalendarDays, Award, Mail, Menu, X as CloseIcon } from 'lucide-react';
+import { LayoutDashboard, Users, Trophy, LogOut, Settings, Bell, Upload, CalendarDays, Award, Mail, Menu, X as CloseIcon, MessageSquare } from 'lucide-react';
 import { Link } from '@/i18n/routing';
 import EventsManager from './components/EventsManager';
 import TeamsManager from './components/TeamsManager';
@@ -13,6 +13,8 @@ import AnnouncementsManager from './components/AnnouncementsManager';
 import StatusManager from './components/StatusManager';
 import SettingsManager from './components/SettingsManager';
 import MessagesManager from './components/MessagesManager';
+import JudgesManager from './components/JudgesManager';
+import ReviewsManager from './components/ReviewsManager';
 
 export default function AdminDashboard() {
     const router = useRouter();
@@ -44,6 +46,8 @@ export default function AdminDashboard() {
         { id: 'site', label: 'Site Appearance', icon: <LayoutDashboard size={18} /> },
         { id: 'gallery', label: 'Media Gallery', icon: <Upload size={18} /> },
         { id: 'news', label: 'Announcements', icon: <Bell size={18} /> },
+        { id: 'judges', label: 'Judge Management', icon: <Users size={18} /> },
+        { id: 'reviews', label: 'Judge Reviews', icon: <MessageSquare size={18} /> },
         { id: 'messages', label: 'User Messages', icon: <Mail size={18} /> },
         { id: 'teams', label: 'Registered Teams', icon: <Users size={18} /> }
     ];
@@ -202,6 +206,8 @@ export default function AdminDashboard() {
                             {activeTab === 'site' && <SettingsManager showToast={showToast} />}
                             {activeTab === 'gallery' && <MediaManager showToast={showToast} />}
                             {activeTab === 'news' && <AnnouncementsManager showToast={showToast} />}
+                            {activeTab === 'judges' && <JudgesManager showToast={showToast} />}
+                            {activeTab === 'reviews' && <ReviewsManager showToast={showToast} />}
                             {activeTab === 'messages' && <MessagesManager showToast={showToast} />}
                         </div>
                     </motion.div>

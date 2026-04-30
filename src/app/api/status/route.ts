@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
-import { isAdminAuthenticated } from '@/lib/auth';
+import { isAdminAuthenticated, getJudgeSession } from '@/lib/auth';
 import { revalidatePath } from 'next/cache';
 
 export const revalidate = 60;
@@ -48,18 +48,49 @@ export async function GET() {
 }
 
 export async function PUT(request: Request) {
-    if (!await isAdminAuthenticated()) {
+    // Allow both admins and judges to update points (judges only via judgement lock)
+    const isAdmin = await isAdminAuthenticated();
+    const isJudge = await getJudgeSession();
+    
+    if (!isAdmin && !isJudge) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
     try {
-        const { heading, units } = await request.json();
+        const body = await request.json();
+        
+        // Handle incremental point updates from Judgement Panel
+        if (body.type === 'update_points') {
+            const { unitName, addPoints } = body;
+            
+            // Get current points
+            const { data: current, error: getErr } = await supabase
+                .from('unit_points')
+                .select('points')
+                .eq('institution', unitName)
+                .single();
+            
+            if (getErr) throw getErr;
+
+            const { error: updateErr } = await supabase
+                .from('unit_points')
+                .update({ points: (current.points || 0) + addPoints })
+                .eq('institution', unitName);
+            
+            if (updateErr) throw updateErr;
+
+            revalidatePath('/', 'layout');
+            return NextResponse.json({ success: true });
+        }
+
+        // Standard Admin Panel full update
+        const { heading, units } = body;
         
         if (heading) {
             await supabase.from('settings').upsert({ key: 'points_heading', value: heading });
         }
         
         if (units && Array.isArray(units)) {
-            // Delete all existing units to allow renaming/removing
             await supabase.from('unit_points').delete().neq('institution', '___DELETE_ALL___');
             
             if (units.length > 0) {
@@ -79,3 +110,4 @@ export async function PUT(request: Request) {
         return NextResponse.json({ error: 'Failed to update status' }, { status: 500 });
     }
 }
+

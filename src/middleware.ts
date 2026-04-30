@@ -23,6 +23,18 @@ export default function middleware(request: NextRequest) {
         }
     }
 
+    // 2. Handle Judge Security
+    if (pathname.includes('/judgement')) {
+        const judgeCookie = request.cookies.get('judge_auth');
+        
+        if (!judgeCookie?.value) {
+            const segments = pathname.split('/');
+            const locale = (segments[1] === 'en' || segments[1] === 'ml') ? segments[1] : 'en';
+            return NextResponse.redirect(new URL(`/${locale}/judge-login`, request.url));
+        }
+    }
+
+
     // 2. Handle Internationalization
     const response = intlMiddleware(request);
     
