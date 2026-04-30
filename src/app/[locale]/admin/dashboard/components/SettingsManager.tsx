@@ -261,7 +261,7 @@ export default function SettingsManager({ showToast }: { showToast: (msg: string
                             />
                             <div className="bg-blue-500/10 border border-blue-500/20 p-3 rounded-xl">
                                 <p className="text-[11px] text-blue-400 leading-relaxed">
-                                    <strong>How to get this:</strong> Go to Google Maps -> Search your location -> Click "Share" -> Click "Embed a map" -> Click "Copy HTML" and paste it here!
+                                    <strong>How to get this:</strong> Go to Google Maps &rarr; Search your location &rarr; Click &quot;Share&quot; &rarr; Click &quot;Embed a map&quot; &rarr; Click &quot;Copy HTML&quot; and paste it here!
                                 </p>
                             </div>
                             {settings.map_iframe_url && (
