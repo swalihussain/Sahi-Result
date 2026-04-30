@@ -62,14 +62,14 @@ export default function JudgementPanel() {
         try {
             const [compRes, unitRes] = await Promise.all([
                 fetch('/api/competitions'),
-                fetch('/api/status') // status API returns unit points/names
+                fetch('/api/status')
             ]);
             
             const compData = await compRes.json();
             const unitData = await unitRes.json();
             
-            setCompetitions(compData);
-            setUnits(unitData.units || []);
+            setCompetitions(Array.isArray(compData) ? compData : []);
+            setUnits(Array.isArray(unitData.units) ? unitData.units : []);
         } catch (error) {
             console.error('Fetch data error:', error);
         } finally {

@@ -34,7 +34,12 @@ export default function JudgesManager({ showToast }: { showToast: (msg: string, 
         try {
             const res = await fetch('/api/judges');
             const data = await res.json();
-            setJudges(data);
+            if (Array.isArray(data)) {
+                setJudges(data);
+            } else {
+                setJudges([]);
+                if (data.error) showToast(data.error, 'error');
+            }
         } catch (error) {
             showToast('Failed to load judges', 'error');
         } finally {

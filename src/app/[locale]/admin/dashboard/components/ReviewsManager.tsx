@@ -30,7 +30,12 @@ export default function ReviewsManager({ showToast }: { showToast: (msg: string,
             // We'll need a new API route for this
             const res = await fetch('/api/judgements?all=true');
             const data = await res.json();
-            setJudgements(data);
+            if (Array.isArray(data)) {
+                setJudgements(data);
+            } else {
+                setJudgements([]);
+                if (data.error) showToast(data.error, 'error');
+            }
         } catch (error) {
             showToast('Failed to load reviews', 'error');
         } finally {
