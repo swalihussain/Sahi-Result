@@ -17,6 +17,9 @@ const sora = Sora({
 export const metadata: Metadata = {
   title: 'Chapparapadavu Sahityotsav | Cultural Festival',
   description: 'Official website for the grand Chapparapadavu Sahityotsav. View events, latest news, live results, and cultural highlights.',
+  icons: {
+    icon: '/favicon.ico?v=2',
+  }
 };
 
 export default async function RootLayout({
