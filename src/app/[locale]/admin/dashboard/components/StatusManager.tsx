@@ -94,8 +94,20 @@ export default function StatusManager({ showToast }: { showToast: (msg: string, 
                             <div className="text-sm text-gray-500 p-4 bg-black/20 rounded-xl border border-white/5">No units registered yet. Make sure units have been initialized.</div>
                         ) : null}
                         {units.map((unit, index) => (
-                            <div key={unit.institution} className="flex items-center gap-4 bg-white/5 p-3 rounded-xl border border-white/5">
-                                <div className="flex-1 font-bold text-gray-200 uppercase tracking-widest text-sm truncate">{unit.institution}</div>
+                            <div key={index} className="flex items-center gap-4 bg-white/5 p-3 rounded-xl border border-white/5 relative group">
+                                <div className="flex-1">
+                                    <input
+                                        type="text"
+                                        className="w-full bg-transparent border-none text-gray-200 font-bold uppercase tracking-widest text-sm focus:outline-none"
+                                        value={unit.institution}
+                                        onChange={(e) => {
+                                            const newUnits = [...units];
+                                            newUnits[index].institution = e.target.value;
+                                            setUnits(newUnits);
+                                        }}
+                                        placeholder="Unit Name (e.g. Unit A)"
+                                    />
+                                </div>
                                 <div className="w-32">
                                     <div className="relative">
                                         <input
@@ -106,9 +118,22 @@ export default function StatusManager({ showToast }: { showToast: (msg: string, 
                                         />
                                     </div>
                                 </div>
+                                <button
+                                    onClick={() => setUnits(units.filter((_, i) => i !== index))}
+                                    className="absolute -right-2 -top-2 bg-red-500/80 text-white rounded-full w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                                >
+                                    ×
+                                </button>
                             </div>
                         ))}
                     </div>
+                    
+                    <button
+                        onClick={() => setUnits([...units, { institution: "New Unit", points: 0 }])}
+                        className="mt-4 px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-xl text-sm font-bold transition-colors"
+                    >
+                        + Add Unit
+                    </button>
                 </div>
 
                 <div className="pt-4 border-t border-white/5">

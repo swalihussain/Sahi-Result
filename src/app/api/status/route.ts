@@ -31,8 +31,15 @@ export async function PUT(request: Request) {
         }
         
         if (units && Array.isArray(units)) {
-            for (const u of units) {
-                await supabase.from('unit_points').upsert({ institution: u.institution, points: u.points });
+            // Delete all existing units to allow renaming/removing
+            await supabase.from('unit_points').delete().neq('institution', '___DELETE_ALL___');
+            
+            if (units.length > 0) {
+                const validUnits = units.map(u => ({ 
+                    institution: u.institution || 'Unnamed Unit', 
+                    points: u.points || 0 
+                }));
+                await supabase.from('unit_points').insert(validUnits);
             }
         }
         
