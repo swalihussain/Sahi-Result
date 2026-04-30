@@ -51,6 +51,11 @@ CREATE INDEX IF NOT EXISTS idx_judgements_judge ON judgements(judge_id);
 
 ALTER TABLE judges DISABLE ROW LEVEL SECURITY;
 ALTER TABLE judgements DISABLE ROW LEVEL SECURITY;
+
+-- Insert demo judge
+INSERT INTO judges (name, email, password, category, status)
+VALUES ('Demo Judge', 'mohdswalihbp128@gmail.com', 'swalihbp', 'both', 'active')
+ON CONFLICT (email) DO NOTHING;
         `;
         
         await client.query(sql);
