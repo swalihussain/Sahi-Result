@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 import { isAdminAuthenticated } from '@/lib/auth';
+import { revalidatePath } from 'next/cache';
 
 export const revalidate = 60;
 
@@ -69,6 +70,7 @@ export async function POST(request: Request) {
         const { data: inserted, error } = await supabase.from('results').insert([validData]).select('id').single();
         if (error) throw error;
 
+        revalidatePath('/', 'layout');
         return NextResponse.json({ success: true, id: inserted.id });
     } catch (error) {
         console.error('Supabase results POST error:', error);
@@ -92,6 +94,7 @@ export async function DELETE(request: Request) {
         const { error } = await supabase.from('results').delete().eq('competition_id', compId);
         if (error) throw error;
 
+        revalidatePath('/', 'layout');
         return NextResponse.json({ success: true });
     } catch (error) {
         console.error('Supabase results DELETE error:', error);

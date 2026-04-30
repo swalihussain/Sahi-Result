@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 import { isAdminAuthenticated } from '@/lib/auth';
+import { revalidatePath } from 'next/cache';
 
 export const revalidate = 60;
 
@@ -66,10 +67,12 @@ export async function PUT(request: Request) {
                     institution: u.institution || 'Unnamed Unit', 
                     points: u.points || 0 
                 }));
-                await supabase.from('unit_points').insert(validUnits);
+                const { error: insertError } = await supabase.from('unit_points').insert(validUnits);
+                if (insertError) throw insertError;
             }
         }
         
+        revalidatePath('/', 'layout');
         return NextResponse.json({ success: true });
     } catch (error) {
         console.error('Supabase status PUT error:', error);

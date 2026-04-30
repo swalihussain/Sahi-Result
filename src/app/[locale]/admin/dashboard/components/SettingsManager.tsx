@@ -243,14 +243,41 @@ export default function SettingsManager({ showToast }: { showToast: (msg: string
                             />
                         </div>
                         <div className="space-y-2 md:col-span-2">
-                            <label className="text-xs font-semibold text-gray-400 uppercase">Google Maps Iframe URL</label>
+                            <label className="text-xs font-semibold text-gray-400 uppercase">Google Maps Embed Link</label>
                             <input 
                                 type="text"
                                 value={settings.map_iframe_url}
-                                onChange={e => setSettings({...settings, map_iframe_url: e.target.value})}
+                                onChange={e => {
+                                    // Auto-extract src if they pasted the whole iframe
+                                    let val = e.target.value;
+                                    if (val.includes('<iframe')) {
+                                        const match = val.match(/src="([^"]+)"/);
+                                        if (match) val = match[1];
+                                    }
+                                    setSettings({...settings, map_iframe_url: val});
+                                }}
                                 className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm text-gray-200 outline-none focus:border-gold/50"
-                                placeholder="Paste the src from Google Maps embed code"
+                                placeholder="Paste the HTML <iframe> or the src link directly..."
                             />
+                            <div className="bg-blue-500/10 border border-blue-500/20 p-3 rounded-xl">
+                                <p className="text-[11px] text-blue-400 leading-relaxed">
+                                    <strong>How to get this:</strong> Go to Google Maps -> Search your location -> Click "Share" -> Click "Embed a map" -> Click "Copy HTML" and paste it here!
+                                </p>
+                            </div>
+                            {settings.map_iframe_url && (
+                                <div className="mt-2 h-40 rounded-xl overflow-hidden border border-white/10 relative">
+                                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity pointer-events-none">
+                                        <span className="bg-black/80 text-white px-3 py-1 rounded text-xs">Live Preview</span>
+                                    </div>
+                                    <iframe 
+                                        src={settings.map_iframe_url} 
+                                        width="100%" 
+                                        height="100%" 
+                                        style={{ border: 0 }} 
+                                        loading="lazy"
+                                    ></iframe>
+                                </div>
+                            )}
                         </div>
                         <div className="space-y-2">
                             <label className="text-xs font-semibold text-gray-400 uppercase">Address Title</label>

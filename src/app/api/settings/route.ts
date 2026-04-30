@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 import { isAdminAuthenticated } from '@/lib/auth';
+import { revalidatePath } from 'next/cache';
+
+export const revalidate = 60;
 
 export async function GET() {
     try {
@@ -28,6 +31,7 @@ export async function POST(request: Request) {
         for (const [key, value] of Object.entries(data)) {
             await supabase.from('settings').upsert({ key, value: String(value) });
         }
+        revalidatePath('/', 'layout'); // Purge global cache!
         return NextResponse.json({ success: true });
     } catch (error) {
         console.error('Settings POST error:', error);
