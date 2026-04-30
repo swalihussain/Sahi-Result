@@ -1,22 +1,22 @@
 import { NextResponse } from 'next/server';
+import { supabase } from '@/lib/supabase';
 // @ts-ignore
 import { Client } from 'pg';
 
 export async function GET() {
+    console.log('Migration trigger started');
     let connectionString = process.env.DATABASE_URL || "postgresql://postgres:swalihbp128@db.wsfvsxmaahdyswfjulfx.supabase.co:5432/postgres?sslmode=require";
     
     const client = new Client({ 
         connectionString,
-        ssl: {
-            rejectUnauthorized: false
-        }
+        ssl: { rejectUnauthorized: false }
     });
 
     try {
         await client.connect();
+        console.log('PG connected');
         
         const sql = `
--- Create judges table
 CREATE TABLE IF NOT EXISTS judges (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name TEXT NOT NULL,
@@ -27,7 +27,6 @@ CREATE TABLE IF NOT EXISTS judges (
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Create judgements table
 CREATE TABLE IF NOT EXISTS judgements (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     event_id UUID REFERENCES competitions(id),
@@ -46,24 +45,34 @@ CREATE TABLE IF NOT EXISTS judgements (
     UNIQUE(event_id, participant_name, judge_id)
 );
 
-CREATE INDEX IF NOT EXISTS idx_judgements_event ON judgements(event_id);
-CREATE INDEX IF NOT EXISTS idx_judgements_judge ON judgements(judge_id);
-
 ALTER TABLE judges DISABLE ROW LEVEL SECURITY;
 ALTER TABLE judgements DISABLE ROW LEVEL SECURITY;
 
--- Insert demo judge
 INSERT INTO judges (name, email, password, category, status)
 VALUES ('Demo Judge', 'mohdswalihbp128@gmail.com', 'swalihbp', 'both', 'active')
 ON CONFLICT (email) DO NOTHING;
         `;
         
         await client.query(sql);
+        console.log('SQL executed');
         
         return NextResponse.json({ success: true, message: 'Migration executed successfully' });
     } catch (error: any) {
         console.error('Migration error:', error);
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        
+        // Fallback: try to insert demo judge via supabase-js anyway
+        try {
+            const { error: insertErr } = await supabase.from('judges').insert([{
+                name: 'Demo Judge',
+                email: 'mohdswalihbp128@gmail.com',
+                password: 'swalihbp',
+                category: 'both',
+                status: 'active'
+            }]);
+            if (!insertErr) return NextResponse.json({ success: true, message: 'SQL failed but Judge inserted via API' });
+        } catch (e) {}
+
+        return NextResponse.json({ error: error.message, stack: error.stack }, { status: 500 });
     } finally {
         await client.end();
     }
