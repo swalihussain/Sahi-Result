@@ -3,11 +3,8 @@ import { NextResponse } from 'next/server';
 import { Client } from 'pg';
 
 export async function GET() {
-    const connectionString = process.env.DATABASE_URL;
-    if (!connectionString) {
-        return NextResponse.json({ error: 'DATABASE_URL not found' }, { status: 500 });
-    }
-
+    let connectionString = process.env.DATABASE_URL || "postgresql://postgres:swalihbp128@db.wsfvsxmaahdyswfjulfx.supabase.co:5432/postgres?sslmode=require";
+    
     const client = new Client({ 
         connectionString,
         ssl: {
