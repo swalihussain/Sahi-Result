@@ -188,13 +188,13 @@ export default async function Home() {
               title: dynamicSettings.explore_1_title || 'Live Results', 
               desc: dynamicSettings.explore_1_desc || 'Check the real-time leaderboard and points table.', 
               href: dynamicSettings.explore_1_href || '/results', 
-              img: dynamicSettings.explore_1_img || 'https://images.unsplash.com/photo-1543854589-9b9eb2dd45d1?q=80&w=1974&auto=format&fit=crop' 
+              img: dynamicSettings.explore_1_img || 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?q=80&w=1974&auto=format&fit=crop' 
             },
             { 
               title: dynamicSettings.explore_2_title || 'News & Updates', 
               desc: dynamicSettings.explore_2_desc || 'Stay updated with latest announcements and schedules.', 
               href: dynamicSettings.explore_2_href || '/news', 
-              img: dynamicSettings.explore_2_img || 'https://images.unsplash.com/photo-1523580494112-071dcb85170d?q=80&w=1974&auto=format&fit=crop' 
+              img: dynamicSettings.explore_2_img || 'https://images.unsplash.com/photo-1459749411175-04bf5292ceea?q=80&w=1974&auto=format&fit=crop' 
             },
             { 
               title: dynamicSettings.explore_3_title || 'Event Gallery', 
