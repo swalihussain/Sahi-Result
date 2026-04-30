@@ -55,7 +55,16 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Result for this position already uploaded' }, { status: 400 });
         }
 
-        const { data: inserted, error } = await supabase.from('results').insert([data]).select('id').single();
+        const validData = {
+            competition_id,
+            team_id,
+            position,
+            points_awarded,
+            participant_names: data.participant_names || null,
+            result_pdf_url: data.result_pdf_url || null
+        };
+
+        const { data: inserted, error } = await supabase.from('results').insert([validData]).select('id').single();
         if (error) throw error;
 
         return NextResponse.json({ success: true, id: inserted.id });
