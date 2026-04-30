@@ -202,9 +202,21 @@ export default function ContactPage() {
                                 <h4 className="font-serif font-bold mb-1">{pageSettings.committeeTitle}</h4>
                                 <p className="text-gray-400 text-sm leading-relaxed">{pageSettings.adminPhone}</p>
                                 <div className="flex gap-3 mt-3">
-                                    <a href={pageSettings.instagram} className="text-gray-400 hover:text-gold transition-colors"><Instagram size={18} /></a>
-                                    <a href={pageSettings.facebook} className="text-gray-400 hover:text-gold transition-colors"><Facebook size={18} /></a>
-                                    <a href={pageSettings.youtube} className="text-gray-400 hover:text-gold transition-colors"><Youtube size={18} /></a>
+                                    {pageSettings.instagram && (
+                                        <a href={pageSettings.instagram.startsWith('http') ? pageSettings.instagram : `https://${pageSettings.instagram}`} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-gold transition-colors">
+                                            <Instagram size={18} />
+                                        </a>
+                                    )}
+                                    {pageSettings.facebook && (
+                                        <a href={pageSettings.facebook.startsWith('http') ? pageSettings.facebook : `https://${pageSettings.facebook}`} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-gold transition-colors">
+                                            <Facebook size={18} />
+                                        </a>
+                                    )}
+                                    {pageSettings.youtube && (
+                                        <a href={pageSettings.youtube.startsWith('http') ? pageSettings.youtube : `https://${pageSettings.youtube}`} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-gold transition-colors">
+                                            <Youtube size={18} />
+                                        </a>
+                                    )}
                                 </div>
                             </div>
                         </div>
