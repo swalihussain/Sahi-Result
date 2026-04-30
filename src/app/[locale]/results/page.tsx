@@ -1,6 +1,19 @@
 import { supabase } from '@/lib/supabase';
 import { getTranslations } from 'next-intl/server';
+import { Metadata } from 'next';
 import ResultsContent from './ResultsContent';
+
+export async function generateMetadata(
+    { params }: { params: Promise<{ locale: string }> }
+): Promise<Metadata> {
+    const { locale } = await params;
+    const t = await getTranslations({ locale, namespace: 'Navigation' });
+    return {
+        title: t('results'),
+        description: 'View the latest live results and competition standings.',
+        openGraph: { title: t('results') }
+    };
+}
 
 export default async function ResultsPage() {
     const t = await getTranslations('Results');

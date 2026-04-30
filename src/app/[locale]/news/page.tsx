@@ -1,6 +1,19 @@
 import { supabase } from '@/lib/supabase';
 import { getTranslations } from 'next-intl/server';
+import { Metadata } from 'next';
 import NewsContent from './NewsContent';
+
+export async function generateMetadata(
+    { params }: { params: Promise<{ locale: string }> }
+): Promise<Metadata> {
+    const { locale } = await params;
+    const t = await getTranslations({ locale, namespace: 'Navigation' });
+    return {
+        title: t('news'),
+        description: 'Read the latest news and announcements.',
+        openGraph: { title: t('news') }
+    };
+}
 
 export default async function NewsPage() {
     const t = await getTranslations('News');

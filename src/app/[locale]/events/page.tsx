@@ -1,6 +1,19 @@
 import { supabase } from '@/lib/supabase';
 import { getTranslations } from 'next-intl/server';
+import { Metadata } from 'next';
 import EventsList from './EventsList';
+
+export async function generateMetadata(
+    { params }: { params: Promise<{ locale: string }> }
+): Promise<Metadata> {
+    const { locale } = await params;
+    const t = await getTranslations({ locale, namespace: 'Navigation' });
+    return {
+        title: t('events'),
+        description: 'Explore the full list of cultural and artistic events.',
+        openGraph: { title: t('events') }
+    };
+}
 
 export default async function EventsPage() {
     const t = await getTranslations('Events');
