@@ -13,8 +13,10 @@ import AnnouncementsManager from './components/AnnouncementsManager';
 import StatusManager from './components/StatusManager';
 import SettingsManager from './components/SettingsManager';
 import MessagesManager from './components/MessagesManager';
-import JudgesManager from './components/JudgesManager';
-import ReviewsManager from './components/ReviewsManager';
+import dynamic from 'next/dynamic';
+
+const JudgesManager = dynamic(() => import('./components/JudgesManager'), { ssr: false });
+const ReviewsManager = dynamic(() => import('./components/ReviewsManager'), { ssr: false });
 
 export default function AdminDashboard() {
     const router = useRouter();
@@ -119,6 +121,7 @@ export default function AdminDashboard() {
                         <button
                             key={tab.id}
                             onClick={() => {
+                                console.log('Changing tab to:', tab.id);
                                 setActiveTab(tab.id);
                                 setIsMobileMenuOpen(false);
                             }}
