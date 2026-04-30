@@ -12,7 +12,32 @@ export async function GET() {
 
         const config = (settingsData || []).reduce((acc: any, doc: any) => ({ ...acc, [doc.key]: doc.value }), {});
         
-        return NextResponse.json({ settings: config, units: unitsData || [] });
+        let unitsList = unitsData || [];
+        
+        if (unitsList.length === 0) {
+            const defaultUnits = [
+                { institution: "CHAPPARAPADAVU", points: 0 },
+                { institution: "ERUVATTY", points: 0 },
+                { institution: "MADAMTHATTU", points: 0 },
+                { institution: "MANGARA", points: 0 },
+                { institution: "MANGARA BN", points: 0 },
+                { institution: "PERUMALABAD", points: 0 },
+                { institution: "PERUMBADAVU", points: 0 },
+                { institution: "PERUVANA EAST", points: 0 },
+                { institution: "PERUVANA WEST", points: 0 },
+                { institution: "SHANTHIGIRI", points: 0 },
+                { institution: "THENNAM", points: 0 }
+            ];
+            
+            // Insert default units
+            await supabase.from('unit_points').insert(defaultUnits);
+            
+            // Re-fetch sorted units
+            const { data: newUnits } = await supabase.from('unit_points').select('*').order('points', { ascending: false });
+            unitsList = newUnits || defaultUnits;
+        }
+
+        return NextResponse.json({ settings: config, units: unitsList });
     } catch (error) {
         console.error('Supabase status GET error:', error);
         return NextResponse.json({ error: 'Failed to fetch status' }, { status: 500 });

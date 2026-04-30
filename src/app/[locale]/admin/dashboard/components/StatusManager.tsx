@@ -91,36 +91,50 @@ export default function StatusManager({ showToast }: { showToast: (msg: string, 
                     
                     <div className="grid gap-3">
                         {units.length === 0 ? (
-                            <div className="text-sm text-gray-500 p-4 bg-black/20 rounded-xl border border-white/5">No units registered yet. Make sure units have been initialized.</div>
+                            <div className="text-sm text-gray-500 p-4 bg-black/20 rounded-xl border border-white/5">No units registered yet. Refresh to initialize.</div>
                         ) : null}
                         {units.map((unit, index) => (
                             <div key={index} className="flex items-center gap-4 bg-white/5 p-3 rounded-xl border border-white/5 relative group">
-                                <div className="flex-1">
+                                <div className="flex-1 font-bold text-gray-200 uppercase tracking-widest text-sm truncate">
+                                    {unit.institution}
+                                </div>
+                                <div className="w-24 md:w-32">
                                     <input
-                                        type="text"
-                                        className="w-full bg-transparent border-none text-gray-200 font-bold uppercase tracking-widest text-sm focus:outline-none"
-                                        value={unit.institution}
-                                        onChange={(e) => {
-                                            const newUnits = [...units];
-                                            newUnits[index].institution = e.target.value;
-                                            setUnits(newUnits);
-                                        }}
-                                        placeholder="Unit Name (e.g. Unit A)"
+                                        type="number"
+                                        className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-2 text-gold font-bold text-center md:text-right focus:outline-none focus:border-gold transition-colors"
+                                        value={unit.points}
+                                        onChange={(e) => handlePointChange(index, e.target.value)}
                                     />
                                 </div>
-                                <div className="w-32">
-                                    <div className="relative">
-                                        <input
-                                            type="number"
-                                            className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-2 text-gold font-bold text-right focus:outline-none focus:border-gold transition-colors"
-                                            value={unit.points}
-                                            onChange={(e) => handlePointChange(index, e.target.value)}
-                                        />
-                                    </div>
-                                </div>
+                                <button
+                                    onClick={async () => {
+                                        setLoading(true);
+                                        try {
+                                            // Save the entire updated array (which includes the new value for this unit)
+                                            await fetch("/api/status", {
+                                                method: "PUT",
+                                                headers: { "Content-Type": "application/json" },
+                                                body: JSON.stringify({ units })
+                                            });
+                                            // Re-fetch to sort by highest points automatically
+                                            const res = await fetch("/api/status");
+                                            const data = await res.json();
+                                            setUnits(data.units || []);
+                                            showToast(`${unit.institution} updated successfully!`, "success");
+                                        } catch {
+                                            showToast("Failed to update points", "error");
+                                        }
+                                        setLoading(false);
+                                    }}
+                                    disabled={loading}
+                                    className="px-4 py-2 bg-gold/20 hover:bg-gold/30 text-gold-light border border-gold/50 rounded-lg text-xs font-bold transition-all disabled:opacity-50"
+                                >
+                                    Update
+                                </button>
                                 <button
                                     onClick={() => setUnits(units.filter((_, i) => i !== index))}
                                     className="absolute -right-2 -top-2 bg-red-500/80 text-white rounded-full w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                                    title="Remove Unit"
                                 >
                                     ×
                                 </button>
@@ -140,10 +154,10 @@ export default function StatusManager({ showToast }: { showToast: (msg: string, 
                     <button
                         onClick={handleSave}
                         disabled={loading}
-                        className="flex items-center justify-center gap-2 w-full py-3.5 bg-gold/20 hover:bg-gold/30 text-gold-light border border-gold/50 rounded-xl font-bold transition-all disabled:opacity-50"
+                        className="flex items-center justify-center gap-2 w-full py-3.5 bg-white/5 hover:bg-white/10 text-white border border-white/10 rounded-xl font-bold transition-all disabled:opacity-50"
                     >
                         <Save size={18} />
-                        {loading ? "Saving..." : "Save Status & Leaderboard Settings"}
+                        {loading ? "Saving..." : "Save All Changes"}
                     </button>
                 </div>
             </div>
