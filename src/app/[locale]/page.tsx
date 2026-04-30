@@ -1,20 +1,18 @@
 import { getTranslations } from 'next-intl/server';
 import * as motion from 'framer-motion/client';
-import { getFirestore } from '@/lib/firebase-admin';
+import { supabase } from '@/lib/supabase';
 import { Link } from '@/i18n/routing';
 
 export default async function Home() {
   const t = await getTranslations('Hero');
   const tAbout = await getTranslations('About');
 
-  // Fetch dynamic settings from Firestore
   let dynamicSettings: Record<string, string> = {};
   try {
-      const firestore = getFirestore();
-      if (firestore) {
-          const snapshot = await firestore.collection('settings').get();
-          snapshot.docs.forEach(doc => {
-              dynamicSettings[doc.id] = doc.data().value;
+      const { data } = await supabase.from('settings').select('*');
+      if (data) {
+          data.forEach((doc: any) => {
+              dynamicSettings[doc.key] = doc.value;
           });
       }
   } catch (e) {

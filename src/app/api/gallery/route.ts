@@ -1,30 +1,25 @@
 import { NextResponse } from 'next/server';
+import { supabase } from '@/lib/supabase';
 import { isAdminAuthenticated } from '@/lib/auth';
-import { getStorageBucket } from '@/lib/firebase-admin';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
     try {
-        const bucket = getStorageBucket();
-        if (!bucket) {
-            return NextResponse.json({ error: 'Cloud storage is not configured.' }, { status: 500 });
-        }
-
-        // List files in the 'gallery' folder
-        const [files] = await bucket.getFiles({ prefix: 'gallery/' });
-        
-        // Map to public URLs
-        const imageUrls = files
-            .filter(file => /\.(jpg|jpeg|png|gif|webp|svg|mp4|webm|ogg)$/i.test(file.name))
-            .map(file => `https://storage.googleapis.com/${bucket.name}/${file.name}`);
-
-        // Sort by name (which starts with timestamp) to show newest first
-        imageUrls.sort((a, b) => {
-            const nameA = a.split('/').pop() || '';
-            const nameB = b.split('/').pop() || '';
-            return nameB.localeCompare(nameA);
+        const { data: files, error } = await supabase.storage.from('uploads').list('gallery', {
+            limit: 100,
+            offset: 0,
+            sortBy: { column: 'name', order: 'desc' },
         });
+
+        if (error) throw error;
+
+        const imageUrls = files
+            .filter((file: any) => /\.(jpg|jpeg|png|gif|webp|svg|mp4|webm|ogg)$/i.test(file.name))
+            .map((file: any) => {
+                const { data } = supabase.storage.from('uploads').getPublicUrl(`gallery/${file.name}`);
+                return data.publicUrl;
+            });
 
         return NextResponse.json(imageUrls);
     } catch (error) {
@@ -45,23 +40,13 @@ export async function DELETE(request: Request) {
             return NextResponse.json({ error: 'Invalid URL' }, { status: 400 });
         }
 
-        const bucket = getStorageBucket();
-        if (!bucket) {
-            return NextResponse.json({ error: 'Cloud storage is not configured.' }, { status: 500 });
-        }
-        
-        // Extract the path from the URL
-        const bucketName = bucket.name;
-        const pathPrefix = `https://storage.googleapis.com/${bucketName}/`;
-        
-        if (!url.startsWith(pathPrefix)) {
+        const storagePath = url.split('/uploads/')[1];
+        if (!storagePath) {
             return NextResponse.json({ error: 'URL does not match cloud storage bucket' }, { status: 400 });
         }
         
-        const storagePath = url.replace(pathPrefix, '');
-        
-        // Delete the file
-        await bucket.file(storagePath).delete();
+        const { error } = await supabase.storage.from('uploads').remove([storagePath]);
+        if (error) throw error;
         
         return NextResponse.json({ success: true });
     } catch (error) {

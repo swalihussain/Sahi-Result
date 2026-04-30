@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getFirestore } from '@/lib/firebase-admin';
+import { supabase } from '@/lib/supabase';
 import { isAdminAuthenticated } from '@/lib/auth';
 
 export async function GET(request: Request) {
@@ -7,39 +7,28 @@ export async function GET(request: Request) {
         const { searchParams } = new URL(request.url);
         const compId = searchParams.get('competition_id');
 
-        const firestore = getFirestore();
-        if (!firestore) return NextResponse.json({ error: 'Firestore not configured' }, { status: 500 });
-
-        let query = firestore.collection('results').orderBy('position', 'asc');
+        let query = supabase.from('results').select('*, teams(name, institution), competitions(name, template_image, category)').order('position', { ascending: true });
+        
         if (compId) {
-            query = query.where('competition_id', '==', compId);
+            query = query.eq('competition_id', compId);
         }
 
-        const snapshot = await query.get();
-        const results = await Promise.all(snapshot.docs.map(async (doc) => {
-            const data = doc.data();
-            
-            // Enrich with team and competition data
-            const teamDoc = await firestore.collection('teams').doc(data.team_id).get();
-            const compDoc = await firestore.collection('competitions').doc(data.competition_id).get();
-            
-            const teamData = teamDoc.exists ? teamDoc.data() : {};
-            const compData = compDoc.exists ? compDoc.data() : {};
+        const { data: snapshot, error } = await query;
+        if (error) throw error;
 
-            return {
-                id: doc.id,
-                ...data,
-                team_name: teamData?.name,
-                institution: teamData?.institution,
-                competition_name: compData?.name,
-                template_image: compData?.template_image,
-                category: compData?.category
-            };
+        const results = snapshot.map((doc: any) => ({
+            id: doc.id,
+            ...doc,
+            team_name: doc.teams?.name,
+            institution: doc.teams?.institution,
+            competition_name: doc.competitions?.name,
+            template_image: doc.competitions?.template_image,
+            category: doc.competitions?.category
         }));
 
         return NextResponse.json(results);
     } catch (error) {
-        console.error('Firestore results GET error:', error);
+        console.error('Supabase results GET error:', error);
         return NextResponse.json({ error: 'Failed to fetch results' }, { status: 500 });
     }
 }
@@ -57,27 +46,21 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
         }
 
-        const firestore = getFirestore();
-        if (!firestore) return NextResponse.json({ error: 'Firestore not configured' }, { status: 500 });
-
-        // Check if result already exists for this competition and position
-        const existing = await firestore.collection('results')
-            .where('competition_id', '==', competition_id)
-            .where('position', '==', position)
-            .get();
+        const { data: existing, error: existErr } = await supabase.from('results')
+            .select('id')
+            .eq('competition_id', competition_id)
+            .eq('position', position);
             
-        if (!existing.empty) {
+        if (existing && existing.length > 0) {
             return NextResponse.json({ error: 'Result for this position already uploaded' }, { status: 400 });
         }
 
-        const docRef = await firestore.collection('results').add({
-            ...data,
-            created_at: new Date().toISOString()
-        });
+        const { data: inserted, error } = await supabase.from('results').insert([data]).select('id').single();
+        if (error) throw error;
 
-        return NextResponse.json({ success: true, id: docRef.id });
+        return NextResponse.json({ success: true, id: inserted.id });
     } catch (error) {
-        console.error('Firestore results POST error:', error);
+        console.error('Supabase results POST error:', error);
         return NextResponse.json({ error: 'Failed to add result' }, { status: 500 });
     }
 }
@@ -95,17 +78,12 @@ export async function DELETE(request: Request) {
             return NextResponse.json({ error: 'Missing competition_id' }, { status: 400 });
         }
 
-        const firestore = getFirestore();
-        if (!firestore) return NextResponse.json({ error: 'Firestore not configured' }, { status: 500 });
-
-        const snapshot = await firestore.collection('results').where('competition_id', '==', compId).get();
-        const batch = firestore.batch();
-        snapshot.docs.forEach(doc => batch.delete(doc.ref));
-        await batch.commit();
+        const { error } = await supabase.from('results').delete().eq('competition_id', compId);
+        if (error) throw error;
 
         return NextResponse.json({ success: true });
     } catch (error) {
-        console.error('Firestore results DELETE error:', error);
+        console.error('Supabase results DELETE error:', error);
         return NextResponse.json({ error: 'Failed to delete results' }, { status: 500 });
     }
 }

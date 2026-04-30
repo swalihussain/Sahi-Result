@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getFirestore } from '@/lib/firebase-admin';
+import { supabase } from '@/lib/supabase';
 import { isAdminAuthenticated } from '@/lib/auth';
 
 export async function POST(request: Request) {
@@ -11,14 +11,11 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
         }
 
-        const firestore = getFirestore();
-        if (!firestore) return NextResponse.json({ error: 'Firestore not configured' }, { status: 500 });
-
-        await firestore.collection('messages').add({
+        const { error } = await supabase.from('messages').insert([{
             ...data,
-            status: 'New',
-            created_at: new Date().toISOString()
-        });
+            status: 'New'
+        }]);
+        if (error) throw error;
 
         return NextResponse.json({ success: true });
     } catch (error) {
@@ -33,13 +30,10 @@ export async function GET() {
     }
 
     try {
-        const firestore = getFirestore();
-        if (!firestore) return NextResponse.json({ error: 'Firestore not configured' }, { status: 500 });
-
-        const snapshot = await firestore.collection('messages').orderBy('created_at', 'desc').get();
-        const messages = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        const { data: messages, error } = await supabase.from('messages').select('*').order('created_at', { ascending: false });
+        if (error) throw error;
         
-        return NextResponse.json(messages);
+        return NextResponse.json(messages || []);
     } catch (error) {
         console.error('Messages fetch error:', error);
         return NextResponse.json({ error: 'Failed to fetch messages' }, { status: 500 });
@@ -53,10 +47,8 @@ export async function PATCH(request: Request) {
 
     try {
         const { id, status } = await request.json();
-        const firestore = getFirestore();
-        if (!firestore) return NextResponse.json({ error: 'Firestore not configured' }, { status: 500 });
-
-        await firestore.collection('messages').doc(id).update({ status });
+        const { error } = await supabase.from('messages').update({ status }).eq('id', id);
+        if (error) throw error;
         return NextResponse.json({ success: true });
     } catch (error) {
         console.error('Message update error:', error);
@@ -72,13 +64,10 @@ export async function DELETE(request: Request) {
     try {
         const { searchParams } = new URL(request.url);
         const id = searchParams.get('id');
-        
-        const firestore = getFirestore();
-        if (!firestore) return NextResponse.json({ error: 'Firestore not configured' }, { status: 500 });
-
         if (!id) return NextResponse.json({ error: 'Missing ID' }, { status: 400 });
 
-        await firestore.collection('messages').doc(id).delete();
+        const { error } = await supabase.from('messages').delete().eq('id', id);
+        if (error) throw error;
         return NextResponse.json({ success: true });
     } catch (error) {
         console.error('Message delete error:', error);

@@ -1,29 +1,27 @@
-import { getFirestore } from '@/lib/firebase-admin';
+import { supabase } from '@/lib/supabase';
 import { getTranslations } from 'next-intl/server';
 import MatchesList from './MatchesList';
 
 export default async function MatchesPage() {
     const t = await getTranslations('Navigation');
     
-    // Fetch dynamic settings and competitions from Firestore
     let dynamicSettings: Record<string, string> = {};
     let competitions: any[] = [];
     
     try {
-        const firestore = getFirestore();
-        if (firestore) {
-            const settingsSnap = await firestore.collection('settings').get();
-            settingsSnap.docs.forEach(doc => {
-                dynamicSettings[doc.id] = doc.data().value;
+        const { data: settingsSnap } = await supabase.from('settings').select('*');
+        if (settingsSnap) {
+            settingsSnap.forEach((doc: any) => {
+                dynamicSettings[doc.key] = doc.value;
             });
-            
-            const compsSnap = await firestore.collection('competitions')
-                .orderBy('date', 'asc')
-                .get();
-            competitions = compsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        }
+        
+        const { data: compsSnap } = await supabase.from('competitions').select('*').order('date', { ascending: true });
+        if (compsSnap) {
+            competitions = compsSnap;
         }
     } catch (e) {
-        console.error("Matches Firestore fetch failed", e);
+        console.error("Matches fetch failed", e);
     }
 
     const pageTitle = dynamicSettings.matches_title || "Festival Schedule";

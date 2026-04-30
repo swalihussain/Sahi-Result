@@ -5,7 +5,7 @@ import { getMessages } from 'next-intl/server';
 import { headers } from 'next/headers';
 import '../globals.css';
 import Navigation from '@/components/Navigation';
-import { getFirestore } from '@/lib/firebase-admin';
+import { supabase } from '@/lib/supabase';
 
 const sora = Sora({ 
   subsets: ['latin'], 
@@ -32,20 +32,16 @@ export default async function RootLayout({
   const pathname = headersList.get('x-pathname') || headersList.get('x-invoke-path') || '';
   const isAdmin = pathname.includes('/admin');
 
-  // Fetch dynamic settings from Firestore
   let siteLogo = "/logo.png";
   let footerText = "© 2026 Chapparapadavu Sahityotsav. All rights reserved.";
   try {
-      const firestore = getFirestore();
-      if (firestore) {
-          const logoDoc = await firestore.collection('settings').doc('site_logo').get();
-          if (logoDoc.exists) siteLogo = logoDoc.data()?.value || siteLogo;
-          
-          const footerDoc = await firestore.collection('settings').doc('footer_text').get();
-          if (footerDoc.exists) footerText = footerDoc.data()?.value || footerText;
-      }
+      const { data: logoDoc } = await supabase.from('settings').select('value').eq('key', 'site_logo').single();
+      if (logoDoc) siteLogo = logoDoc.value || siteLogo;
+      
+      const { data: footerDoc } = await supabase.from('settings').select('value').eq('key', 'footer_text').single();
+      if (footerDoc) footerText = footerDoc.value || footerText;
   } catch (e) {
-      console.error("Layout Firestore content fetch failed", e);
+      console.error("Layout content fetch failed", e);
   }
 
   return (
@@ -64,4 +60,3 @@ export default async function RootLayout({
     </html>
   );
 }
-

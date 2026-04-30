@@ -10,6 +10,7 @@
     "sync": "powershell -ExecutionPolicy Bypass -File ./auto-push.ps1"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.105.1",
     "@tailwindcss/postcss": "^4.2.1",
     "clsx": "^2.1.1",
     "firebase-admin": "^13.8.0",

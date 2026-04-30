@@ -1,18 +1,14 @@
 import { NextResponse } from 'next/server';
-import { getFirestore } from '@/lib/firebase-admin';
+import { supabase } from '@/lib/supabase';
 import { isAdminAuthenticated } from '@/lib/auth';
 
 export async function GET() {
     try {
-        const firestore = getFirestore();
-        if (!firestore) return NextResponse.json({ error: 'Firestore not configured' }, { status: 500 });
-
-        const snapshot = await firestore.collection('competitions').orderBy('created_at', 'desc').get();
-        const competitions = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        
-        return NextResponse.json(competitions);
+        const { data: competitions, error } = await supabase.from('competitions').select('*').order('created_at', { ascending: false });
+        if (error) throw error;
+        return NextResponse.json(competitions || []);
     } catch (error) {
-        console.error('Firestore competitions GET error:', error);
+        console.error('Supabase competitions GET error:', error);
         return NextResponse.json({ error: 'Failed to fetch competitions' }, { status: 500 });
     }
 }
@@ -21,27 +17,20 @@ export async function POST(request: Request) {
     if (!await isAdminAuthenticated()) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-
     try {
         const data = await request.json();
         const { name, date, category } = data;
-
         if (!name || !date || !category) {
             return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
         }
-
-        const firestore = getFirestore();
-        if (!firestore) return NextResponse.json({ error: 'Firestore not configured' }, { status: 500 });
-
-        const docRef = await firestore.collection('competitions').add({
+        const { data: inserted, error } = await supabase.from('competitions').insert([{
             ...data,
-            created_at: new Date().toISOString(),
-            results_only: data.results_only || 0
-        });
-
-        return NextResponse.json({ success: true, id: docRef.id });
+            results_only: data.results_only ? 1 : 0
+        }]).select('id').single();
+        if (error) throw error;
+        return NextResponse.json({ success: true, id: inserted.id });
     } catch (error) {
-        console.error('Firestore competitions POST error:', error);
+        console.error('Supabase competitions POST error:', error);
         return NextResponse.json({ error: 'Failed to create competition' }, { status: 500 });
     }
 }

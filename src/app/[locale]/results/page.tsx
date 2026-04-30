@@ -1,18 +1,16 @@
-import { getFirestore } from '@/lib/firebase-admin';
+import { supabase } from '@/lib/supabase';
 import { getTranslations } from 'next-intl/server';
 import ResultsContent from './ResultsContent';
 
 export default async function ResultsPage() {
     const t = await getTranslations('Results');
     
-    // Fetch dynamic settings from Firestore
     let dynamicSettings: Record<string, string> = {};
     try {
-        const firestore = getFirestore();
-        if (firestore) {
-            const snapshot = await firestore.collection('settings').get();
-            snapshot.docs.forEach(doc => {
-                dynamicSettings[doc.id] = doc.data().value;
+        const { data } = await supabase.from('settings').select('*');
+        if (data) {
+            data.forEach((doc: any) => {
+                dynamicSettings[doc.key] = doc.value;
             });
         }
     } catch (e) {

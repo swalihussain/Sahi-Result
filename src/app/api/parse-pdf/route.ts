@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getFirestore, getStorageBucket } from '@/lib/firebase-admin';
+import { supabase } from '@/lib/supabase';
 const PDFParser = require('pdf2json');
 
 export async function POST(request: Request) {
@@ -15,26 +15,18 @@ export async function POST(request: Request) {
         const arrayBuffer = await file.arrayBuffer();
         const buffer = Buffer.from(arrayBuffer);
 
-        const firestore = getFirestore();
-        const bucket = getStorageBucket();
-
-        if (!firestore || !bucket) {
-            return NextResponse.json({ error: 'Firebase not configured.' }, { status: 500 });
-        }
-
-        // Upload PDF to Storage
         const filename = `${new Date().getTime()}-${file.name.replace(/\s+/g, '_')}`;
         const storagePath = `results/${filename}`;
-        const fileRef = bucket.file(storagePath);
-
-        await fileRef.save(buffer, {
-            metadata: { contentType: file.type || 'application/pdf' },
-            public: true,
+        
+        const { error: uploadError } = await supabase.storage.from('uploads').upload(storagePath, buffer, {
+            contentType: file.type || 'application/pdf',
+            upsert: true
         });
+        if (uploadError) throw uploadError;
 
-        const result_pdf_url = `https://storage.googleapis.com/${bucket.name}/${storagePath}`;
+        const { data: publicUrlData } = supabase.storage.from('uploads').getPublicUrl(storagePath);
+        const result_pdf_url = publicUrlData.publicUrl;
 
-        // Extract Text
         const extractText = (): Promise<string> => {
             return new Promise((resolve, reject) => {
                 const pdfParser = new PDFParser(null, 1);
@@ -57,9 +49,7 @@ export async function POST(request: Request) {
         const textLines = rawText.split('\n').map((line: string) => line.trim());
         const extractedResults = [];
 
-        // Fetch competition once
-        const compDoc = await firestore.collection('competitions').doc(competitionId).get();
-        const compData = compDoc.data();
+        const { data: compData } = await supabase.from('competitions').select('*').eq('id', competitionId).single();
         const isGroup = compData?.category === 'GENERAL' || compData?.name?.toLowerCase().includes('group');
 
         for (const line of textLines) {
@@ -69,7 +59,6 @@ export async function POST(request: Request) {
                 const participant = match[2].trim();
                 const institution = match[3].trim();
 
-                // Points logic
                 let points = 0;
                 if (isGroup) {
                     points = position === 1 ? 15 : position === 2 ? 10 : position === 3 ? 5 : 0;
@@ -77,53 +66,36 @@ export async function POST(request: Request) {
                     points = position === 1 ? 10 : position === 2 ? 5 : position === 3 ? 2 : 0;
                 }
 
-                // Use Firestore transaction for team matching and updates
-                await firestore.runTransaction(async (transaction) => {
-                    // Check if result already exists
-                    const existingQuery = firestore.collection('results')
-                        .where('competition_id', '==', competitionId)
-                        .where('position', '==', position);
-                    const existingSnap = await transaction.get(existingQuery);
-                    
-                    if (!existingSnap.empty) return;
+                const { data: existing } = await supabase.from('results').select('id').eq('competition_id', competitionId).eq('position', position);
+                if (existing && existing.length > 0) continue;
 
-                    // Find or create team
-                    const teamQuery = firestore.collection('teams')
-                        .where('institution', '==', institution);
-                    const teamSnap = await transaction.get(teamQuery);
+                const { data: teamSnap } = await supabase.from('teams').select('*').eq('institution', institution);
+                let teamId;
+                if (!teamSnap || teamSnap.length === 0) {
+                    const { data: newTeam } = await supabase.from('teams').insert([{
+                        name: institution,
+                        institution: institution,
+                        total_points: points,
+                        wins: position === 1 ? 1 : 0
+                    }]).select('id').single();
+                    teamId = newTeam?.id;
+                } else {
+                    const teamDoc = teamSnap[0];
+                    teamId = teamDoc.id;
+                    await supabase.from('teams').update({
+                        total_points: (teamDoc.total_points || 0) + points,
+                        wins: (teamDoc.wins || 0) + (position === 1 ? 1 : 0)
+                    }).eq('id', teamId);
+                }
 
-                    let teamId;
-                    if (teamSnap.empty) {
-                        const newTeamRef = firestore.collection('teams').doc();
-                        transaction.set(newTeamRef, {
-                            name: institution,
-                            institution: institution,
-                            total_points: points,
-                            wins: position === 1 ? 1 : 0,
-                            created_at: new Date().toISOString()
-                        });
-                        teamId = newTeamRef.id;
-                    } else {
-                        const teamDoc = teamSnap.docs[0];
-                        teamId = teamDoc.id;
-                        transaction.update(teamDoc.ref, {
-                            total_points: (teamDoc.data().total_points || 0) + points,
-                            wins: (teamDoc.data().wins || 0) + (position === 1 ? 1 : 0)
-                        });
-                    }
-
-                    // Create result
-                    const resultRef = firestore.collection('results').doc();
-                    transaction.set(resultRef, {
-                        competition_id: competitionId,
-                        team_id: teamId,
-                        position,
-                        points_awarded: points,
-                        participant_names: participant,
-                        result_pdf_url,
-                        created_at: new Date().toISOString()
-                    });
-                });
+                await supabase.from('results').insert([{
+                    competition_id: competitionId,
+                    team_id: teamId,
+                    position,
+                    points_awarded: points,
+                    participant_names: participant,
+                    result_pdf_url
+                }]);
 
                 extractedResults.push({ position, participant, institution, points });
             }
@@ -135,7 +107,7 @@ export async function POST(request: Request) {
 
         return NextResponse.json({ success: true, count: extractedResults.length, results: extractedResults });
     } catch (error: any) {
-        console.error('Firestore parse-pdf error:', error);
+        console.error('Supabase parse-pdf error:', error);
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
     }
 }

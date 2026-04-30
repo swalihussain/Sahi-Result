@@ -1,16 +1,15 @@
 import { NextResponse } from 'next/server';
-import { getFirestore } from '@/lib/firebase-admin';
+import { supabase } from '@/lib/supabase';
 import { isAdminAuthenticated } from '@/lib/auth';
 
 export async function GET() {
     try {
-        const firestore = getFirestore();
-        if (!firestore) return NextResponse.json({ error: 'Firestore not configured' }, { status: 500 });
-
-        const snapshot = await firestore.collection('settings').get();
+        const { data: settingsData, error } = await supabase.from('settings').select('*');
+        if (error) throw error;
+        
         const settingsMap: Record<string, string> = {};
-        snapshot.docs.forEach(doc => {
-            settingsMap[doc.id] = doc.data().value;
+        (settingsData || []).forEach(doc => {
+            settingsMap[doc.key] = doc.value;
         });
         
         return NextResponse.json(settingsMap);
@@ -24,19 +23,11 @@ export async function POST(request: Request) {
     if (!await isAdminAuthenticated()) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-
     try {
         const data = await request.json();
-        const firestore = getFirestore();
-        if (!firestore) return NextResponse.json({ error: 'Firestore not configured' }, { status: 500 });
-        
-        const batch = firestore.batch();
         for (const [key, value] of Object.entries(data)) {
-            const docRef = firestore.collection('settings').doc(key);
-            batch.set(docRef, { value: String(value) });
+            await supabase.from('settings').upsert({ key, value: String(value) });
         }
-        await batch.commit();
-        
         return NextResponse.json({ success: true });
     } catch (error) {
         console.error('Settings POST error:', error);

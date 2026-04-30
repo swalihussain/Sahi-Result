@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getFirestore } from '@/lib/firebase-admin';
+import { supabase } from '@/lib/supabase';
 import { isAdminAuthenticated } from '@/lib/auth';
 
 export async function GET(request: Request) {
@@ -7,24 +7,18 @@ export async function GET(request: Request) {
         const { searchParams } = new URL(request.url);
         const grouped = searchParams.get('grouped');
         
-        const firestore = getFirestore();
-        if (!firestore) return NextResponse.json({ error: 'Firestore not configured' }, { status: 500 });
-        
         if (grouped === 'true') {
-            const snapshot = await firestore.collection('unit_points').orderBy('total_points', 'desc').get();
-            const units = snapshot.docs.map((doc, i) => ({ 
-                id: doc.id,
-                name: doc.data().institution,
-                ...doc.data() 
-            }));
-            return NextResponse.json(units);
+            const { data: units, error } = await supabase.from('unit_points').select('*').order('points', { ascending: false });
+            if (error) throw error;
+            const mappedUnits = units.map((u: any) => ({ id: u.institution, name: u.institution, ...u, total_points: u.points }));
+            return NextResponse.json(mappedUnits);
         }
 
-        const snapshot = await firestore.collection('teams').orderBy('total_points', 'desc').get();
-        const teams = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        return NextResponse.json(teams);
+        const { data: teams, error } = await supabase.from('teams').select('*').order('total_points', { ascending: false });
+        if (error) throw error;
+        return NextResponse.json(teams || []);
     } catch (error) {
-        console.error('Firestore teams GET error:', error);
+        console.error('Supabase teams GET error:', error);
         return NextResponse.json({ error: 'Failed to fetch teams' }, { status: 500 });
     }
 }
@@ -33,28 +27,21 @@ export async function POST(request: Request) {
     if (!await isAdminAuthenticated()) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-
     try {
         const data = await request.json();
         const { name, institution } = data;
-
         if (!name || !institution) {
             return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
         }
-
-        const firestore = getFirestore();
-        if (!firestore) return NextResponse.json({ error: 'Firestore not configured' }, { status: 500 });
-
-        const docRef = await firestore.collection('teams').add({
+        const { data: inserted, error } = await supabase.from('teams').insert([{
             ...data,
             total_points: 0,
-            wins: 0,
-            created_at: new Date().toISOString()
-        });
-
-        return NextResponse.json({ success: true, id: docRef.id });
+            wins: 0
+        }]).select('id').single();
+        if (error) throw error;
+        return NextResponse.json({ success: true, id: inserted.id });
     } catch (error) {
-        console.error('Firestore teams POST error:', error);
+        console.error('Supabase teams POST error:', error);
         return NextResponse.json({ error: 'Failed to create team' }, { status: 500 });
     }
 }

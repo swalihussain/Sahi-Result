@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getFirestore } from '@/lib/firebase-admin';
+import { supabase } from '@/lib/supabase';
 import { isAdminAuthenticated } from '@/lib/auth';
 
 export async function DELETE(
@@ -12,14 +12,12 @@ export async function DELETE(
 
   try {
     const { id } = await params;
-    const firestore = getFirestore();
-    if (!firestore) return NextResponse.json({ error: 'Firestore not configured' }, { status: 500 });
-
-    await firestore.collection('competitions').doc(id).delete();
+    const { error } = await supabase.from('competitions').delete().eq('id', id);
+    if (error) throw error;
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Firestore competition DELETE error:', error);
+    console.error('Supabase competition DELETE error:', error);
     return NextResponse.json({ error: 'Failed to delete competition' }, { status: 500 });
   }
 }
@@ -36,17 +34,12 @@ export async function PUT(
     const { id } = await params;
     const data = await request.json();
 
-    const firestore = getFirestore();
-    if (!firestore) return NextResponse.json({ error: 'Firestore not configured' }, { status: 500 });
-
-    await firestore.collection('competitions').doc(id).update({
-        ...data,
-        updated_at: new Date().toISOString()
-    });
+    const { error } = await supabase.from('competitions').update(data).eq('id', id);
+    if (error) throw error;
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Firestore competition PUT error:', error);
+    console.error('Supabase competition PUT error:', error);
     return NextResponse.json({ error: 'Failed to update competition' }, { status: 500 });
   }
 }
