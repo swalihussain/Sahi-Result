@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 import { isAdminAuthenticated } from '@/lib/auth';
 
+export const revalidate = 60;
+
 export async function GET() {
     try {
         const { data: settingsData, error: setErr } = await supabase.from('settings').select('*');

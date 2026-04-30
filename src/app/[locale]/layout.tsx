@@ -2,9 +2,9 @@ import type { Metadata } from 'next';
 import { Sora } from 'next/font/google';
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages } from 'next-intl/server';
-import { headers } from 'next/headers';
 import '../globals.css';
 import Navigation from '@/components/Navigation';
+import Footer from '@/components/Footer';
 import { supabase } from '@/lib/supabase';
 
 const sora = Sora({ 
@@ -22,6 +22,8 @@ export const metadata: Metadata = {
   }
 };
 
+export const revalidate = 60; // Cache pages for 60 seconds to support 100k+ concurrent users
+
 export default async function RootLayout({
   children,
   params
@@ -31,9 +33,6 @@ export default async function RootLayout({
 }) {
   const { locale } = await params;
   const messages = await getMessages();
-  const headersList = await headers();
-  const pathname = headersList.get('x-pathname') || headersList.get('x-invoke-path') || '';
-  const isAdmin = pathname.includes('/admin');
 
   let siteLogo = "/logo.png";
   let footerText = "© 2026 Chapparapadavu Sahityotsav. All rights reserved.";
@@ -51,13 +50,9 @@ export default async function RootLayout({
     <html lang={locale} className={`${sora.variable}`}>
       <body className={`${sora.className} bg-bg-dark text-white antialiased min-h-screen flex flex-col`}>
         <NextIntlClientProvider messages={messages} locale={locale}>
-          {!isAdmin && <Navigation logoUrl={siteLogo} />}
+          <Navigation logoUrl={siteLogo} />
           {children}
-          {!isAdmin && (
-            <footer className="mt-auto py-8 border-t border-white/10 text-center text-sm text-gray-500">
-              {footerText}
-            </footer>
-          )}
+          <Footer footerText={footerText} />
         </NextIntlClientProvider>
       </body>
     </html>

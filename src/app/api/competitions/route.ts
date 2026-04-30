@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 import { isAdminAuthenticated } from '@/lib/auth';
 
+export const revalidate = 60;
+
 export async function GET() {
     try {
         const { data: competitions, error } = await supabase.from('competitions').select('*').order('created_at', { ascending: false });

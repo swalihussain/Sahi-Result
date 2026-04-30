@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 import { isAdminAuthenticated } from '@/lib/auth';
 
-export const dynamic = 'force-dynamic';
+export const revalidate = 60;
 
 export async function GET() {
     try {
