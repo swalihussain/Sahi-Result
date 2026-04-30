@@ -58,8 +58,8 @@ export async function POST(request: Request) {
         
         revalidatePath('/', 'layout');
         return NextResponse.json(data);
-    } catch (error) {
+    } catch (error: any) {
         console.error('Judgements POST error:', error);
-        return NextResponse.json({ error: 'Failed to save judgement' }, { status: 500 });
+        return NextResponse.json({ error: error.message || 'Failed to save judgement' }, { status: 500 });
     }
 }

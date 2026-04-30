@@ -60,14 +60,17 @@ export default function JudgesManager({ showToast }: { showToast: (msg: string, 
                 body: JSON.stringify(body)
             });
 
-            if (!res.ok) throw new Error();
+            if (!res.ok) {
+                const err = await res.json();
+                throw new Error(err.error || 'Action failed');
+            }
 
             showToast(editingId ? 'Judge updated' : 'Judge added');
             setEditingId(null);
             setFormData({ name: '', email: '', password: '', category: 'stage', status: 'active' });
             fetchJudges();
-        } catch (error) {
-            showToast('Action failed', 'error');
+        } catch (error: any) {
+            showToast(error.message, 'error');
         } finally {
             setIsSaving(false);
         }

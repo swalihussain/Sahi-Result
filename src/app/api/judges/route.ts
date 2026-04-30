@@ -38,9 +38,9 @@ export async function POST(request: Request) {
         if (error) throw error;
         revalidatePath('/', 'layout');
         return NextResponse.json(data);
-    } catch (error) {
+    } catch (error: any) {
         console.error('Judges POST error:', error);
-        return NextResponse.json({ error: 'Failed to add judge' }, { status: 500 });
+        return NextResponse.json({ error: error.message || 'Failed to add judge' }, { status: 500 });
     }
 }
 
