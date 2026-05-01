@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
 import { ArrowLeft, Download, Trophy, ArrowRightLeft, Share2, X, Award, ChevronDown, Save, Edit3, Plus, ListPlus, Check, PlusCircle, Trash2 } from 'lucide-react';
 import { PRESET_PROGRAMS, CATEGORIES } from '@/lib/constants';
@@ -42,39 +42,66 @@ export default function ResultsManager({ showToast }: { showToast: (msg: string,
 
     const [selectedAdminCategory, setSelectedAdminCategory] = useState("All");
 
-    const fetchInitialData = () => {
-        fetch("/api/competitions").then(res => res.json()).then(data => setCompetitions(data));
-        fetch("/api/teams").then(res => res.json()).then(data => setTeams(data));
-        fetch("/api/results").then(res => res.json()).then(data => {
-            if (!Array.isArray(data)) {
+    const filteredCompetitions = useMemo(() => {
+        if (!competitions) return [];
+        return competitions
+            .filter(c => {
+                if (!selectedAdminCategory || selectedAdminCategory === "All") return true;
+                return String(c.category || '').toLowerCase().trim() === String(selectedAdminCategory).toLowerCase().trim();
+            })
+            .sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+    }, [competitions, selectedAdminCategory]);
+
+    const fetchInitialData = async () => {
+        setLoading(true);
+        try {
+            const [compRes, teamRes, resultsRes] = await Promise.all([
+                fetch("/api/competitions"),
+                fetch("/api/teams"),
+                fetch("/api/results")
+            ]);
+
+            const compData = await compRes.json();
+            const teamsData = await teamRes.json();
+            const resultsData = await resultsRes.json();
+
+            setCompetitions(Array.isArray(compData) ? compData : []);
+            setTeams(Array.isArray(teamsData) ? teamsData : []);
+
+            if (Array.isArray(resultsData)) {
+                // Group by competition
+                const grouped = resultsData.reduce((acc: any[], current: any) => {
+                    let existing = acc.find((item: any) => String(item.competition_id) === String(current.competition_id));
+                    if (!existing) {
+                        existing = {
+                            competition_id: current.competition_id,
+                            competition_name: current.competition_name,
+                            category: current.category,
+                            result_images: (() => {
+                                try {
+                                    const parsed = JSON.parse(current.result_pdf_url || "[]");
+                                    return Array.isArray(parsed) ? parsed : [current.result_pdf_url].filter(Boolean);
+                                } catch (e) {
+                                    return [current.result_pdf_url].filter(Boolean);
+                                }
+                            })(),
+                            winners: []
+                        };
+                        acc.push(existing);
+                    }
+                    existing.winners.push(current);
+                    return acc;
+                }, []);
+                setPublishedResults(grouped);
+            } else {
                 setPublishedResults([]);
-                return;
             }
-            // Group by competition
-            const grouped = data.reduce((acc: any[], current: any) => {
-                let existing = acc.find((item: any) => String(item.competition_id) === String(current.competition_id));
-                if (!existing) {
-                    existing = {
-                        competition_id: current.competition_id,
-                        competition_name: current.competition_name,
-                        category: current.category,
-                        result_images: (() => {
-                            try {
-                                const parsed = JSON.parse(current.result_pdf_url || "[]");
-                                return Array.isArray(parsed) ? parsed : [current.result_pdf_url].filter(Boolean);
-                            } catch (e) {
-                                return [current.result_pdf_url].filter(Boolean);
-                            }
-                        })(),
-                        winners: []
-                    };
-                    acc.push(existing);
-                }
-                existing.winners.push(current);
-                return acc;
-            }, []);
-            setPublishedResults(grouped);
-        });
+        } catch (error) {
+            console.error("Failed to fetch results data:", error);
+            showToast("Failed to load data from server", "error");
+        } finally {
+            setLoading(false);
+        }
     };
 
     useEffect(() => {
@@ -455,16 +482,12 @@ export default function ResultsManager({ showToast }: { showToast: (msg: string,
                                         setFormData({ ...formData, competition_id: compId, serial_number: comp?.serial_number || "", match_number: comp?.match_number || "" });
                                     }}
                                 >
-                                    <option value="">{selectedAdminCategory === "All" ? "-- Select Category First --" : "-- Choose Competition --"}</option>
-                                    {competitions
-                                        .filter(c => selectedAdminCategory === "All" || c.category === selectedAdminCategory)
-                                        .sort((a, b) => a.name.localeCompare(b.name))
-                                        .map(c => (
-                                            <option key={c.id} value={c.id.toString()}>
-                                                {c.name} {c.match_number ? `(Match ${c.match_number})` : ""} [{c.category}]
-                                            </option>
-                                        ))
-                                    }
+                                    <option value="">{selectedAdminCategory === "All" ? "-- Select Category First --" : filteredCompetitions.length === 0 ? "-- No Competitions Found --" : "-- Choose Competition --"}</option>
+                                    {filteredCompetitions.map(c => (
+                                        <option key={c.id} value={c.id.toString()}>
+                                            {c.name} {c.match_number ? `(Match ${c.match_number})` : ""} [{c.category}]
+                                        </option>
+                                    ))}
                                 </select>
                                 <ChevronDown size={16} className="absolute inset-y-0 right-4 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" />
                             </div>
@@ -479,7 +502,7 @@ export default function ResultsManager({ showToast }: { showToast: (msg: string,
                                 </button>
                             )}
                         </div>
-                        {selectedAdminCategory !== "All" && competitions.filter(c => c.category === selectedAdminCategory).length === 0 && (
+                        {selectedAdminCategory !== "All" && filteredCompetitions.length === 0 && (
                             <p className="text-[10px] text-red-400 mt-1 ml-1 font-bold">No competitions available in this category</p>
                         )}
                     </div>
