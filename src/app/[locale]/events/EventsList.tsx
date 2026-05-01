@@ -2,10 +2,7 @@
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Link } from '@/i18n/routing';
-import { ExternalLink, X } from 'lucide-react';
-
-import { Calendar } from 'lucide-react';
+import { X, Calendar } from 'lucide-react';
 
 interface Event {
     id: number;
