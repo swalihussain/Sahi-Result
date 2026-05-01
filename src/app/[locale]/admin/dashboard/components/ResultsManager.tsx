@@ -372,9 +372,12 @@ export default function ResultsManager({ showToast }: { showToast: (msg: string,
                     <div className="space-y-2">
                         <label className="text-sm font-semibold text-gray-400">Filter By Category</label>
                         <select
-                            className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-gold transition-colors appearance-none"
+                            className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-gold transition-colors appearance-none cursor-pointer"
                             value={selectedAdminCategory}
-                            onChange={(e) => setSelectedAdminCategory(e.target.value)}
+                            onChange={(e) => {
+                                setSelectedAdminCategory(e.target.value);
+                                setFormData({ ...formData, competition_id: "", serial_number: "", match_number: "" });
+                            }}
                         >
                             <option value="All">All Categories</option>
                             <option value="Lower Primary">Lower Primary</option>
@@ -452,10 +455,10 @@ export default function ResultsManager({ showToast }: { showToast: (msg: string,
                                         setFormData({ ...formData, competition_id: compId, serial_number: comp?.serial_number || "", match_number: comp?.match_number || "" });
                                     }}
                                 >
-                                    <option value="" disabled>-- Select an Event --</option>
+                                    <option value="">{selectedAdminCategory === "All" ? "-- Select Category First --" : "-- Choose Competition --"}</option>
                                     {competitions
                                         .filter(c => selectedAdminCategory === "All" || c.category === selectedAdminCategory)
-                                        .filter(c => c.results_only) // Show ONLY results_only competitions
+                                        .sort((a, b) => a.name.localeCompare(b.name))
                                         .map(c => (
                                             <option key={c.id} value={c.id.toString()}>
                                                 {c.name} {c.match_number ? `(Match ${c.match_number})` : ""} [{c.category}]
@@ -476,6 +479,9 @@ export default function ResultsManager({ showToast }: { showToast: (msg: string,
                                 </button>
                             )}
                         </div>
+                        {selectedAdminCategory !== "All" && competitions.filter(c => c.category === selectedAdminCategory).length === 0 && (
+                            <p className="text-[10px] text-red-400 mt-1 ml-1 font-bold">No competitions available in this category</p>
+                        )}
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:col-span-2">
