@@ -74,8 +74,9 @@ export default function ResultsManager({ showToast }: { showToast: (msg: string,
                     if (!existing) {
                         existing = {
                             competition_id: current.competition_id,
-                            competition_name: current.competition_name,
-                            category: current.category,
+                            competition_name: current.competitions?.name || "Unknown Competition",
+                            category: current.competitions?.category || "Unknown Category",
+                            serial_number: current.competitions?.serial_number || "",
                             result_images: (() => {
                                 try {
                                     const parsed = JSON.parse(current.result_pdf_url || "[]");
@@ -673,11 +674,14 @@ export default function ResultsManager({ showToast }: { showToast: (msg: string,
                     ) : (
                         publishedResults.map(res => (
                             <div key={res.competition_id} className="bg-white/5 border border-white/10 rounded-2xl p-5 flex items-center justify-between group hover:border-gold/30 transition-all">
-                                <div>
-                                    <h4 className="text-white font-bold">{res.competition_name}</h4>
-                                    <div className="flex gap-4 mt-1">
-                                        <p className="text-xs text-gold uppercase tracking-widest font-black">{res.category}</p>
-                                        <p className="text-xs text-gray-400">{res.winners.length} Winners added</p>
+                                <div className="flex items-start gap-4">
+                                    <div className="flex items-center justify-center w-10 h-10 rounded-full bg-gold/10 border border-gold/30 text-gold font-black text-lg">
+                                        {res.serial_number || "•"}
+                                    </div>
+                                    <div>
+                                        <h4 className="text-white font-bold text-lg uppercase tracking-tight">{res.competition_name}</h4>
+                                        <p className="text-[10px] text-gray-500 uppercase tracking-[0.2em] font-black mt-0.5">{res.category}</p>
+                                        <p className="text-[10px] text-gray-400 mt-2 italic">{res.winners.length} Winners Published</p>
                                     </div>
                                 </div>
                                 <div className="flex gap-2">

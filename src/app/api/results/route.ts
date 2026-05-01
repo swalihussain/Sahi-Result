@@ -14,6 +14,11 @@ export async function GET(request: Request) {
             *,
             units (
                 unit_name
+            ),
+            competitions (
+                name,
+                category,
+                serial_number
             )
         `);
     if (competition_id) {
