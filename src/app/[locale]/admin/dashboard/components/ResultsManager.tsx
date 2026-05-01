@@ -674,14 +674,23 @@ export default function ResultsManager({ showToast }: { showToast: (msg: string,
                     ) : (
                         publishedResults.map(res => (
                             <div key={res.competition_id} className="bg-white/5 border border-white/10 rounded-2xl p-5 flex items-center justify-between group hover:border-gold/30 transition-all">
-                                <div className="flex items-start gap-4">
-                                    <div className="flex items-center justify-center w-10 h-10 rounded-full bg-gold/10 border border-gold/30 text-gold font-black text-lg">
+                                <div className="flex items-start gap-5">
+                                    <div className="flex items-center justify-center w-12 h-12 rounded-full bg-gold/10 border-2 border-gold/40 text-gold font-black text-xl shadow-[0_0_15px_rgba(212,175,55,0.2)]">
                                         {res.serial_number || "•"}
                                     </div>
-                                    <div>
-                                        <h4 className="text-white font-bold text-lg uppercase tracking-tight">{res.competition_name}</h4>
-                                        <p className="text-[10px] text-gray-500 uppercase tracking-[0.2em] font-black mt-0.5">{res.category}</p>
-                                        <p className="text-[10px] text-gray-400 mt-2 italic">{res.winners.length} Winners Published</p>
+                                    <div className="flex-1">
+                                        <h4 className="text-white font-bold text-lg uppercase tracking-tight">
+                                            RESULT {res.serial_number} – {res.competition_name}
+                                        </h4>
+                                        <p className="text-xs text-gray-500 uppercase tracking-[0.2em] font-black mt-1">
+                                            {res.category}
+                                        </p>
+                                        <div className="flex items-center gap-2 mt-3">
+                                            <div className="w-1.5 h-1.5 rounded-full bg-gold/50" />
+                                            <p className="text-[10px] text-gray-400 italic font-medium">
+                                                {res.winners.length} Winners added
+                                            </p>
+                                        </div>
                                     </div>
                                 </div>
                                 <div className="flex gap-2">
