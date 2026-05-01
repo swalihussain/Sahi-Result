@@ -138,6 +138,24 @@ export default function AdminDashboard() {
                             {tab.label}
                         </button>
                     ))}
+
+                    <div className="h-px bg-white/5 my-2 mx-4" />
+                    
+                    <Link 
+                        href="/admin/assign-codes"
+                        className="flex items-center gap-4 px-4 py-3 rounded-xl text-gray-400 hover:bg-white/5 hover:text-gray-200 transition-all font-medium text-sm border border-transparent"
+                    >
+                        <Hash size={18} />
+                        Assign Participant Codes
+                    </Link>
+
+                    <Link 
+                        href="/admin/final-results"
+                        className="flex items-center gap-4 px-4 py-3 rounded-xl text-gray-400 hover:bg-white/5 hover:text-gray-200 transition-all font-medium text-sm border border-transparent"
+                    >
+                        <Trophy size={18} />
+                        View Final Results
+                    </Link>
                 </nav>
 
                 <div className="mt-auto px-4 pt-8 border-t border-white/5">

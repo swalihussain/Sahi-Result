@@ -13,7 +13,7 @@ export default function middleware(request: NextRequest) {
     const { pathname } = request.nextUrl;
 
     // 1. Handle Admin Security
-    if (pathname.includes('/admin/dashboard')) {
+    if (pathname.includes('/admin/dashboard') || pathname.includes('/admin/assign-codes') || pathname.includes('/admin/final-results')) {
         const authCookie = request.cookies.get('admin_auth');
         
         if (authCookie?.value !== 'authenticated') {
