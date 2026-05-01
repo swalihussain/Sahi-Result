@@ -388,19 +388,23 @@ export default function ResultDetailsPage() {
                                                 </svg>
                                             ))}
                                         </div>
-                                        <div className="max-w-[700px]">
-                                            <h3
-                                                className="font-bold text-[52px] uppercase leading-none tracking-tight mb-2"
-                                                style={{ color: styles.text }}
-                                            >
-                                                {winner.participant_names || winner.team_name}
-                                            </h3>
-                                            <p
-                                                className="font-light text-[34px] leading-tight italic opacity-90"
-                                                style={{ color: styles.sub }}
-                                            >
-                                                {winner.institution}
-                                            </p>
+                                        <div className="flex flex-col gap-8">
+                                            {(winner.participant_names || winner.team_name || "").split(/,|\n/).filter(Boolean).map((name: string, nIdx: number) => (
+                                                <div key={nIdx} className="flex flex-col">
+                                                    <h3
+                                                        className="font-bold text-[52px] uppercase leading-none tracking-tight mb-2"
+                                                        style={{ color: styles.text }}
+                                                    >
+                                                        {name.trim()}
+                                                    </h3>
+                                                    <p
+                                                        className="font-light text-[34px] leading-tight italic opacity-90 uppercase"
+                                                        style={{ color: styles.sub }}
+                                                    >
+                                                        {winner.units?.unit_name || winner.institution || ""}
+                                                    </p>
+                                                </div>
+                                            ))}
                                         </div>
                                     </div>
                                 ))}

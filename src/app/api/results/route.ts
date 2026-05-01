@@ -8,7 +8,14 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const competition_id = searchParams.get('competition_id');
 
-    let query = supabase.from('results').select('*');
+    let query = supabase
+        .from('results')
+        .select(`
+            *,
+            units (
+                unit_name
+            )
+        `);
     if (competition_id) {
         query = query.eq('competition_id', competition_id);
     }
