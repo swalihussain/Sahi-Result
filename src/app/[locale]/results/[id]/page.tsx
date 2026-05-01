@@ -375,27 +375,29 @@ export default function ResultDetailsPage() {
                                 {winnersSorted.map((winner) => (
                                     <div key={winner.id} className="flex flex-col gap-[75px]">
                                         {(winner.participant_names || winner.team_name || "").split(/,|\n/).filter(Boolean).map((name: string, nIdx: number) => (
-                                            <div key={nIdx} className="flex items-start gap-[40px]">
-                                                {/* Rank Markers */}
-                                                <div className="flex flex-col gap-4 items-center w-10 mt-4">
-                                                    {[...Array(winner.position)].map((_, i) => (
-                                                        <svg key={i} width="24" height="24" viewBox="0 0 24 24" className="drop-shadow-sm">
-                                                            <path
-                                                                d="M12 2L2 12l10 10 10-10z"
-                                                                fill={
-                                                                    winner.position === 1 ? '#2563eb' :
-                                                                        winner.position === 2 ? '#3b82f6' :
-                                                                            winner.position === 3 ? '#60a5fa' : '#93c5fd'
-                                                                }
-                                                            />
-                                                        </svg>
-                                                    ))}
+                                            <div key={nIdx} className="flex items-start gap-12">
+                                                {/* Grouped Diamond Bullet */}
+                                                <div className="pt-5 shrink-0">
+                                                    <svg width="32" height="32" viewBox="0 0 24 24" className="drop-shadow-sm">
+                                                        <g fill={
+                                                            winner.position === 1 ? '#2563eb' :
+                                                                winner.position === 2 ? '#3b82f6' :
+                                                                    winner.position === 3 ? '#60a5fa' : '#93c5fd'
+                                                        }>
+                                                            {/* Top Diamond */}
+                                                            <path d="M12 2L16 6L12 10L8 6Z" />
+                                                            {/* Bottom Left */}
+                                                            <path d="M7 11L11 15L7 19L3 15Z" />
+                                                            {/* Bottom Right */}
+                                                            <path d="M17 11L21 15L17 19L13 15Z" />
+                                                        </g>
+                                                    </svg>
                                                 </div>
 
                                                 {/* Info Block */}
                                                 <div className="flex flex-col">
                                                     <h3
-                                                        className="font-bold text-[52px] uppercase leading-none tracking-tight mb-2"
+                                                        className="font-semibold text-[52px] uppercase leading-[1.1] tracking-tight mb-1"
                                                         style={{ color: styles.text }}
                                                     >
                                                         {name.trim()}
