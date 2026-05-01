@@ -76,6 +76,10 @@ function ResultsContent({ initialTitle, initialSubtitle, initialTableHeading }: 
         if (!tableRef.current || isDownloading) return;
         setIsDownloading('image');
         try {
+            // Ensure fonts are loaded
+            if (typeof document !== 'undefined' && 'fonts' in document) {
+                await (document as any).fonts.ready;
+            }
             const html2canvas = (await import('html2canvas')).default;
             const canvas = await html2canvas(tableRef.current, {
                 backgroundColor: '#0a0a0a',
@@ -105,6 +109,10 @@ function ResultsContent({ initialTitle, initialSubtitle, initialTableHeading }: 
         if (!tableRef.current || isDownloading) return;
         setIsDownloading('pdf');
         try {
+            // Ensure fonts are loaded
+            if (typeof document !== 'undefined' && 'fonts' in document) {
+                await (document as any).fonts.ready;
+            }
             const html2canvas = (await import('html2canvas')).default;
             const { jsPDF } = await import('jspdf');
             const canvas = await html2canvas(tableRef.current, {

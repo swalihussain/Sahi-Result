@@ -151,6 +151,10 @@ export default function ResultDetailsPage() {
         if (!printRef.current || !competition) return;
         setDownloading(true);
         try {
+            // Ensure fonts are loaded before capture to prevent layout shift
+            if (typeof document !== 'undefined' && 'fonts' in document) {
+                await (document as any).fonts.ready;
+            }
             const html2canvas = (await import('html2canvas')).default;
             const canvas = await html2canvas(printRef.current, {
                 scale: 3, // Increased scale for even higher quality
