@@ -358,13 +358,13 @@ export default function ResultDetailsPage() {
                                             className="font-black text-[14px] uppercase tracking-[4px] leading-none mb-3"
                                             style={{ color: styles.meta }}
                                         >
-                                            Result ID
+                                            RESULT
                                         </span>
                                         <span
                                             className="font-black text-[86px] leading-none tracking-tighter"
                                             style={{ color: styles.text }}
                                         >
-                                            {id}
+                                            → {competition.serial_number || id}
                                         </span>
                                     </div>
                                 </div>

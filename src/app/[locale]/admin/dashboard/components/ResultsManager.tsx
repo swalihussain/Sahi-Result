@@ -30,6 +30,7 @@ export default function ResultsManager({ showToast }: { showToast: (msg: string,
 
     const [formData, setFormData] = useState({
         competition_id: "",
+        serial_number: "",
         results: [
             { position: "1", team_id: "", participant_names: "" },
             { position: "2", team_id: "", participant_names: "" },
@@ -204,6 +205,7 @@ export default function ResultsManager({ showToast }: { showToast: (msg: string,
                 showToast(isEditing ? "Results updated successfully!" : "All results published successfully!", "success");
                 setFormData({
                     competition_id: "",
+                    serial_number: "",
                     results: [
                         { position: "1", team_id: "", participant_names: "" },
                         { position: "2", team_id: "", participant_names: "" },
@@ -213,7 +215,7 @@ export default function ResultsManager({ showToast }: { showToast: (msg: string,
                 });
                 
                 // Migrations for existing DBs
-                const columns = ['competition_type', 'template_image', 'description', 'results_only'];
+                const columns = ['serial_number', 'competition_type', 'template_image', 'description', 'results_only'];
                 const selectedComp = competitions.find(c => c.id.toString() === formData.competition_id);
                 if (selectedComp) {
                     const updatedCompData: any = { ...selectedComp };
@@ -223,6 +225,10 @@ export default function ResultsManager({ showToast }: { showToast: (msg: string,
                             updatedCompData[col] = null; // Or a suitable default value
                             needsUpdate = true;
                         }
+                    }
+                    if (formData.serial_number !== undefined) {
+                        updatedCompData.serial_number = formData.serial_number;
+                        needsUpdate = true;
                     }
 
                     if (needsUpdate) {
@@ -262,7 +268,7 @@ export default function ResultsManager({ showToast }: { showToast: (msg: string,
             const exists = competitions.find(c => c.name === programName && c.category === selectedAdminCategory);
             if (exists) {
                 showToast("This program already exists in this category", "error");
-                setFormData({ ...formData, competition_id: exists.id.toString() });
+                setFormData({ ...formData, competition_id: exists.id.toString(), serial_number: exists.serial_number || "" });
                 setAddingBulk(false);
                 return;
             }
@@ -293,7 +299,7 @@ export default function ResultsManager({ showToast }: { showToast: (msg: string,
                 // Select the newly created event
                 const added = freshData.find((c: any) => c.name === programName && c.category === selectedAdminCategory);
                 if (added) {
-                    setFormData({ ...formData, competition_id: added.id.toString() });
+                    setFormData({ ...formData, competition_id: added.id.toString(), serial_number: "" });
                 }
             }
         } catch {
@@ -317,7 +323,7 @@ export default function ResultsManager({ showToast }: { showToast: (msg: string,
             const res = await fetch(`/api/competitions/${compId}`, { method: "DELETE" });
             if (res.ok) {
                 showToast("Program deleted", "success");
-                setFormData({ ...formData, competition_id: "" });
+                setFormData({ ...formData, competition_id: "", serial_number: "" });
                 fetchInitialData();
             }
         } catch {
@@ -492,6 +498,18 @@ export default function ResultsManager({ showToast }: { showToast: (msg: string,
                         )}
                     </div>
 
+                    <div className="space-y-2 md:col-span-2">
+                        <label className="text-sm font-semibold text-gray-300">Result Number (Serial)</label>
+                        <input
+                            type="text"
+                            placeholder="Example: 1, 2, 3..."
+                            className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-gold transition-colors"
+                            value={formData.serial_number}
+                            onChange={(e) => setFormData({ ...formData, serial_number: e.target.value })}
+                        />
+                        <p className="text-[10px] text-gray-500 italic">This number will appear as "RESULT -> X" on the poster.</p>
+                    </div>
+
                 </div>
 
                 <div className="space-y-8 bg-white/5 p-6 rounded-2xl border border-white/10">
@@ -623,6 +641,7 @@ export default function ResultsManager({ showToast }: { showToast: (msg: string,
                             setExistingFileUrls([]);
                             setFormData({
                                 competition_id: "",
+                                serial_number: "",
                                 results: [
                                     { position: "1", team_id: "", participant_names: "" },
                                     { position: "2", team_id: "", participant_names: "" },
@@ -681,6 +700,7 @@ export default function ResultsManager({ showToast }: { showToast: (msg: string,
                                             const comp = competitions.find(c => c.id.toString() === res.competition_id.toString());
                                             setFormData({
                                                 competition_id: res.competition_id.toString(),
+                                                serial_number: comp?.serial_number || "",
                                                 results: newResults
                                             });
                                             window.scrollTo({ top: 0, behavior: 'smooth' });
