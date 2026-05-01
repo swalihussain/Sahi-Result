@@ -42,6 +42,7 @@ export default function JudgementPanel() {
     
     // Scoring state
     const [participants, setParticipants] = useState<Participant[]>([]);
+    const [availableCodes, setAvailableCodes] = useState<string[]>([]);
     const [isLocked, setIsLocked] = useState(false);
 
     const schoolLevels = [
@@ -100,37 +101,50 @@ export default function JudgementPanel() {
         setSelectedLevel(level);
         setSelectedEventId('');
         setParticipants([]);
+        setAvailableCodes([]);
     };
 
     // Derived list of participants when event changes
     useEffect(() => {
         if (selectedEventId) {
-            // Load existing judgements if any
+            fetchCodes();
             fetchJudgements();
         }
     }, [selectedEventId]);
 
+    const fetchCodes = async () => {
+        try {
+            const res = await fetch(`/api/participants?compId=${selectedEventId}`);
+            const data = await res.json();
+            if (Array.isArray(data)) {
+                setAvailableCodes(data.map(p => p.code_letter));
+            }
+        } catch (error) {
+            console.error('Fetch codes error:', error);
+        }
+    };
+
     const fetchJudgements = async () => {
         setIsLoading(true);
         try {
-            const res = await fetch(`/api/judgements?eventId=${selectedEventId}&judgeId=${judge?.id}`);
+            const res = await fetch(`/api/results`); // Admin can see all, but here we filter in backend? 
+            // Wait, I should probably filter by competition_id and judge_id
             const data = await res.json();
+            const filtered = data.filter((r: any) => r.competition_id === Number(selectedEventId) && r.judge_id === judge?.id);
             
-            if (data.length > 0) {
-                // Map existing judgements
-                const mapped = data.map((j: any) => ({
-                    name: j.participant_name,
-                    unit: j.unit_name,
-                    judge1: j.judge_1_marks,
-                    judge2: j.judge_2_marks,
-                    judge3: j.judge_3_marks,
-                    marks: j.total_marks,
+            if (filtered.length > 0) {
+                // Map existing results
+                const mapped = filtered.map((j: any) => ({
+                    name: j.code_letter, // We use 'name' field for the code letter now
+                    unit: '', 
+                    judge1: j.judge1_marks,
+                    judge2: j.judge2_marks,
+                    judge3: j.judge3_marks,
+                    marks: j.final_marks,
                     feedback: j.feedback
                 }));
                 setParticipants(mapped);
-                setIsLocked(data[0].is_locked);
-                // Also update judging type to match existing data
-                if (data[0].category) setJudgingType(data[0].category);
+                setIsLocked(filtered[0].status === 'locked');
             } else {
                 setParticipants([]);
                 setIsLocked(false);
@@ -143,7 +157,10 @@ export default function JudgementPanel() {
     };
 
     const addParticipant = () => {
-        setParticipants([...participants, { name: '', unit: units[0]?.name || '' }]);
+        // Find next available code
+        const usedCodes = participants.map(p => p.name);
+        const nextCode = availableCodes.find(c => !usedCodes.includes(c)) || '';
+        setParticipants([...participants, { name: nextCode, unit: '' }]);
     };
 
     const removeParticipant = (index: number) => {
@@ -178,21 +195,19 @@ export default function JudgementPanel() {
         try {
             const promises = participants.map(p => {
                 const body = {
-                    event_id: selectedEventId,
-                    participant_name: p.name,
-                    unit_name: p.unit,
-                    judge_1_marks: p.judge1,
-                    judge_2_marks: p.judge2,
-                    judge_3_marks: p.judge3,
-                    total_marks: p.marks || 0,
+                    competition_id: Number(selectedEventId),
+                    code_letter: p.name,
+                    judge1_marks: p.judge1,
+                    judge2_marks: p.judge2,
+                    judge3_marks: p.judge3,
+                    final_marks: p.marks || 0,
                     feedback: p.feedback,
-                    category: judgingType,
                     judge_id: judge.id,
-                    is_locked: lock,
+                    status: lock ? 'locked' : 'open',
                     rank: sortedParticipants.findIndex(sp => sp.name === p.name) + 1
                 };
                 
-                return fetch('/api/judgements', {
+                return fetch('/api/results', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(body)
@@ -203,11 +218,9 @@ export default function JudgementPanel() {
 
             if (lock) {
                 setIsLocked(true);
-                // Trigger leaderboard update logic here if needed
-                await updateLeaderboard();
             }
 
-            alert(lock ? 'Results Locked Successfully!' : 'Marks Saved Successfully!');
+            alert(lock ? 'Blind Results Locked Successfully!' : 'Draft Saved Successfully!');
         } catch (error) {
             alert('Error saving results');
         } finally {
@@ -395,24 +408,22 @@ export default function JudgementPanel() {
                                     ) : participants.map((p, idx) => (
                                         <tr key={idx} className="group hover:bg-white/[0.02] transition-colors">
                                             <td className="px-6 py-4 space-y-2 max-w-xs">
-                                                <input 
-                                                    disabled={isLocked}
-                                                    type="text"
-                                                    value={p.name}
-                                                    onChange={(e) => updateParticipant(idx, 'name', e.target.value)}
-                                                    placeholder="Name of Participant"
-                                                    className="w-full bg-black/40 border border-white/5 rounded-xl px-4 py-2.5 text-sm text-white focus:border-gold/30 outline-none transition-all font-semibold"
-                                                />
-                                                <select 
-                                                    disabled={isLocked}
-                                                    value={p.unit}
-                                                    onChange={(e) => updateParticipant(idx, 'unit', e.target.value)}
-                                                    className="w-full bg-black/40 border border-white/5 rounded-xl px-4 py-2.5 text-[11px] text-gold font-bold uppercase tracking-widest focus:border-gold/30 outline-none transition-all cursor-pointer"
-                                                >
-                                                    {units.map(u => (
-                                                        <option key={u.id} value={u.name}>{u.name}</option>
-                                                    ))}
-                                                </select>
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-10 h-10 rounded-xl bg-gold/10 border border-gold/30 flex items-center justify-center text-gold font-black text-xl shadow-[0_0_15px_rgba(212,175,55,0.1)]">
+                                                        {p.name || '?'}
+                                                    </div>
+                                                    <select 
+                                                        disabled={isLocked}
+                                                        value={p.name}
+                                                        onChange={(e) => updateParticipant(idx, 'name', e.target.value)}
+                                                        className="flex-1 bg-black/40 border border-white/5 rounded-xl px-4 py-2.5 text-sm text-white focus:border-gold/30 outline-none transition-all font-semibold appearance-none"
+                                                    >
+                                                        <option value="">-- Choose Code --</option>
+                                                        {availableCodes.map(code => (
+                                                            <option key={code} value={code}>Participant {code}</option>
+                                                        ))}
+                                                    </select>
+                                                </div>
                                             </td>
 
                                             {judgingType === 'stage' ? (

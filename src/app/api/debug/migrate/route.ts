@@ -18,6 +18,8 @@ export async function GET() {
         
         const sql = `
 DROP TABLE IF EXISTS judgements;
+DROP TABLE IF EXISTS results;
+DROP TABLE IF EXISTS participants;
 
 CREATE TABLE IF NOT EXISTS judges (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -29,27 +31,38 @@ CREATE TABLE IF NOT EXISTS judges (
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE TABLE IF NOT EXISTS judgements (
+CREATE TABLE IF NOT EXISTS participants (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    event_id INTEGER REFERENCES competitions(id),
+    competition_id INTEGER REFERENCES competitions(id),
     participant_name TEXT NOT NULL,
     unit_name TEXT NOT NULL,
-    judge_1_marks FLOAT8,
-    judge_2_marks FLOAT8,
-    judge_3_marks FLOAT8,
-    total_marks FLOAT8 NOT NULL,
-    feedback TEXT,
-    category TEXT NOT NULL CHECK (category IN ('stage', 'non-stage')),
-    judge_id UUID REFERENCES judges(id),
-    is_locked BOOLEAN DEFAULT FALSE,
-    rank INT,
+    code_letter TEXT NOT NULL,
+    category TEXT NOT NULL,
     created_at TIMESTAMPTZ DEFAULT NOW(),
-    UNIQUE(event_id, participant_name, judge_id)
+    UNIQUE(competition_id, code_letter)
+);
+
+CREATE TABLE IF NOT EXISTS results (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    competition_id INTEGER REFERENCES competitions(id),
+    code_letter TEXT NOT NULL,
+    judge1_marks FLOAT8,
+    judge2_marks FLOAT8,
+    judge3_marks FLOAT8,
+    final_marks FLOAT8 NOT NULL,
+    rank INT,
+    feedback TEXT,
+    status TEXT NOT NULL DEFAULT 'locked',
+    judge_id UUID REFERENCES judges(id),
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    UNIQUE(competition_id, code_letter, judge_id)
 );
 
 ALTER TABLE judges DISABLE ROW LEVEL SECURITY;
-ALTER TABLE judgements DISABLE ROW LEVEL SECURITY;
+ALTER TABLE participants DISABLE ROW LEVEL SECURITY;
+ALTER TABLE results DISABLE ROW LEVEL SECURITY;
 
+-- Re-insert demo judge
 INSERT INTO judges (name, email, password, category, status)
 VALUES ('Demo Judge', 'mohdswalihbp128@gmail.com', 'swalihbp', 'both', 'active')
 ON CONFLICT (email) DO NOTHING;

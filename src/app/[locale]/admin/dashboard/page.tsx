@@ -17,6 +17,8 @@ import dynamic from 'next/dynamic';
 
 const JudgesManager = dynamic(() => import('./components/JudgesManager'), { ssr: false });
 const ReviewsManager = dynamic(() => import('./components/ReviewsManager'), { ssr: false });
+const ParticipantsManager = dynamic(() => import('./components/ParticipantsManager'), { ssr: false });
+const FinalResultsManager = dynamic(() => import('./components/FinalResultsManager'), { ssr: false });
 
 export default function AdminDashboard() {
     const router = useRouter();
@@ -48,8 +50,10 @@ export default function AdminDashboard() {
         { id: 'site', label: 'Site Appearance', icon: <LayoutDashboard size={18} /> },
         { id: 'gallery', label: 'Media Gallery', icon: <Upload size={18} /> },
         { id: 'news', label: 'Announcements', icon: <Bell size={18} /> },
+        { id: 'participants', label: 'Participant Codes', icon: <Users size={18} /> },
         { id: 'judges', label: 'Judge Management', icon: <Users size={18} /> },
         { id: 'reviews', label: 'Judge Reviews', icon: <MessageSquare size={18} /> },
+        { id: 'final-results', label: 'Final Results (Blind)', icon: <Trophy size={18} /> },
         { id: 'messages', label: 'User Messages', icon: <Mail size={18} /> },
         { id: 'teams', label: 'Registered Teams', icon: <Users size={18} /> }
     ];
@@ -209,8 +213,10 @@ export default function AdminDashboard() {
                             {activeTab === 'site' && <SettingsManager showToast={showToast} />}
                             {activeTab === 'gallery' && <MediaManager showToast={showToast} />}
                             {activeTab === 'news' && <AnnouncementsManager showToast={showToast} />}
+                            {activeTab === 'participants' && <ParticipantsManager showToast={showToast} />}
                             {activeTab === 'judges' && <JudgesManager showToast={showToast} />}
                             {activeTab === 'reviews' && <ReviewsManager showToast={showToast} />}
+                            {activeTab === 'final-results' && <FinalResultsManager showToast={showToast} />}
                             {activeTab === 'messages' && <MessagesManager showToast={showToast} />}
                         </div>
                     </motion.div>
