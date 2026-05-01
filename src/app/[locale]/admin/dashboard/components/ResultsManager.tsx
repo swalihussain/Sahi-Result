@@ -502,12 +502,13 @@ export default function ResultsManager({ showToast }: { showToast: (msg: string,
                         <label className="text-sm font-semibold text-gray-300">Result Number (Serial)</label>
                         <input
                             type="text"
+                            required
                             placeholder="Example: 1, 2, 3..."
                             className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-gold transition-colors"
                             value={formData.serial_number}
                             onChange={(e) => setFormData({ ...formData, serial_number: e.target.value })}
                         />
-                        <p className="text-[10px] text-gray-500 italic">This number will appear as "RESULT -> X" on the poster.</p>
+                        <p className="text-[10px] text-gray-500 italic">This number will appear as "RESULT X" on the poster.</p>
                     </div>
 
                 </div>
