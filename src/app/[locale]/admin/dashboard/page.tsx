@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { LayoutDashboard, Users, Trophy, LogOut, Settings, Bell, Upload, CalendarDays, Award, Mail, Menu, X as CloseIcon, MessageSquare } from 'lucide-react';
+import { LayoutDashboard, Users, Trophy, LogOut, Settings, Bell, Upload, CalendarDays, Award, Mail, Menu, X as CloseIcon, MessageSquare, Hash } from 'lucide-react';
 import { Link } from '@/i18n/routing';
 import EventsManager from './components/EventsManager';
 import TeamsManager from './components/TeamsManager';
