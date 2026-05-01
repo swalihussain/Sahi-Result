@@ -8,7 +8,7 @@ import { PRESET_PROGRAMS, CATEGORIES } from '@/lib/constants';
 export default function ResultsManager({ showToast }: { showToast: (msg: string, type: 'success' | 'error') => void }) {
     const [loading, setLoading] = useState(false);
     const [competitions, setCompetitions] = useState<any[]>([]);
-    const [teams, setTeams] = useState<any[]>([]);
+    const [units, setUnits] = useState<any[]>([]);
     const [publishedResults, setPublishedResults] = useState<any[]>([]);
     const [isEditing, setIsEditing] = useState(false);
     const [addingBulk, setAddingBulk] = useState(false);
@@ -55,18 +55,18 @@ export default function ResultsManager({ showToast }: { showToast: (msg: string,
     const fetchInitialData = async () => {
         setLoading(true);
         try {
-            const [compRes, teamRes, resultsRes] = await Promise.all([
+            const [compRes, unitRes, resultsRes] = await Promise.all([
                 fetch("/api/competitions"),
-                fetch("/api/teams"),
+                fetch("/api/units"),
                 fetch("/api/results")
             ]);
 
             const compData = await compRes.json();
-            const teamsData = await teamRes.json();
+            const unitData = await unitRes.json();
             const resultsData = await resultsRes.json();
 
             setCompetitions(Array.isArray(compData) ? compData : []);
-            setTeams(Array.isArray(teamsData) ? teamsData : []);
+            setUnits(Array.isArray(unitData) ? unitData : []);
 
             if (Array.isArray(resultsData)) {
                 // Group by competition
@@ -559,7 +559,7 @@ export default function ResultsManager({ showToast }: { showToast: (msg: string,
                                             }}
                                         >
                                             <option value="">-- No Winner --</option>
-                                            {teams.map(t => <option key={t.id} value={t.id}>{t.name} - {t.institution}</option>)}
+                                            {units.map(u => <option key={u.id} value={u.id.toString()}>{u.unit_name}</option>)}
                                         </select>
                                         <ChevronDown size={16} className="absolute inset-y-0 right-4 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" />
                                     </div>
