@@ -36,12 +36,23 @@ export default function JudgementPanel() {
     const [isSaving, setIsSaving] = useState(false);
 
     // Filter states
-    const [selectedCategory, setSelectedCategory] = useState<'stage' | 'non-stage'>('stage');
+    const [selectedLevel, setSelectedLevel] = useState('');
+    const [judgingType, setJudgingType] = useState<'stage' | 'non-stage'>('stage');
     const [selectedEventId, setSelectedEventId] = useState('');
     
     // Scoring state
     const [participants, setParticipants] = useState<Participant[]>([]);
     const [isLocked, setIsLocked] = useState(false);
+
+    const schoolLevels = [
+        "Lower Primary",
+        "Upper Primary",
+        "High School",
+        "Higher Secondary",
+        "Junior",
+        "Senior",
+        "General"
+    ];
 
     useEffect(() => {
         checkAuth();
@@ -55,6 +66,8 @@ export default function JudgementPanel() {
             router.push('/judge-login');
         } else {
             setJudge(data.judge);
+            // Default judging type based on judge category
+            if (data.judge.category === 'non-stage') setJudgingType('non-stage');
         }
     };
 
@@ -80,6 +93,13 @@ export default function JudgementPanel() {
     const handleLogout = async () => {
         await fetch('/api/judge-auth', { method: 'DELETE' });
         router.push('/judge-login');
+    };
+
+    // Reset competition when level changes
+    const handleLevelChange = (level: string) => {
+        setSelectedLevel(level);
+        setSelectedEventId('');
+        setParticipants([]);
     };
 
     // Derived list of participants when event changes
@@ -109,6 +129,8 @@ export default function JudgementPanel() {
                 }));
                 setParticipants(mapped);
                 setIsLocked(data[0].is_locked);
+                // Also update judging type to match existing data
+                if (data[0].category) setJudgingType(data[0].category);
             } else {
                 setParticipants([]);
                 setIsLocked(false);
@@ -135,7 +157,7 @@ export default function JudgementPanel() {
         updated[index] = { ...updated[index], [field]: value };
         
         // Auto-calculate final marks
-        if (selectedCategory === 'stage') {
+        if (judgingType === 'stage') {
             const j1 = Number(updated[index].judge1 || 0);
             const j2 = Number(updated[index].judge2 || 0);
             const j3 = Number(updated[index].judge3 || 0);
@@ -164,7 +186,7 @@ export default function JudgementPanel() {
                     judge_3_marks: p.judge3,
                     total_marks: p.marks || 0,
                     feedback: p.feedback,
-                    category: selectedCategory,
+                    category: judgingType,
                     judge_id: judge.id,
                     is_locked: lock,
                     rank: sortedParticipants.findIndex(sp => sp.name === p.name) + 1
@@ -232,6 +254,11 @@ export default function JudgementPanel() {
         );
     }
 
+    const filteredCompetitions = competitions.filter(c => 
+        (!selectedLevel || c.category === selectedLevel) &&
+        (judge?.category === 'both' || (judgingType === 'stage' && judge?.category === 'stage') || (judgingType === 'non-stage' && judge?.category === 'non-stage'))
+    );
+
     return (
         <div className="min-h-screen bg-bg-dark text-gray-200 p-4 md:p-8 font-sans">
             <header className="max-w-6xl mx-auto mb-8 flex flex-col md:flex-row justify-between items-center gap-6">
@@ -263,18 +290,36 @@ export default function JudgementPanel() {
                         <Filter size={120} />
                     </div>
                     
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 relative z-10">
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-6 relative z-10">
                         <div className="space-y-2">
-                            <label className="text-[10px] font-bold text-gray-500 uppercase tracking-[0.2em] ml-1">Judging Category</label>
+                            <label className="text-[10px] font-bold text-gray-500 uppercase tracking-[0.2em] ml-1">School Level</label>
                             <div className="relative">
                                 <select 
                                     disabled={isLocked}
-                                    value={selectedCategory}
-                                    onChange={(e) => setSelectedCategory(e.target.value as any)}
+                                    value={selectedLevel}
+                                    onChange={(e) => handleLevelChange(e.target.value)}
                                     className="w-full bg-black/60 border border-white/10 rounded-2xl px-5 py-4 text-white outline-none focus:border-gold/50 transition-all appearance-none cursor-pointer text-sm font-medium"
                                 >
-                                    <option value="stage">Stage Competitions</option>
-                                    <option value="non-stage">Non-Stage Competitions</option>
+                                    <option value="">-- Select Category --</option>
+                                    {schoolLevels.map(level => (
+                                        <option key={level} value={level}>{level}</option>
+                                    ))}
+                                </select>
+                                <ChevronDown size={16} className="absolute right-5 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" />
+                            </div>
+                        </div>
+
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-bold text-gray-500 uppercase tracking-[0.2em] ml-1">Judging Type</label>
+                            <div className="relative">
+                                <select 
+                                    disabled={isLocked}
+                                    value={judgingType}
+                                    onChange={(e) => setJudgingType(e.target.value as any)}
+                                    className="w-full bg-black/60 border border-white/10 rounded-2xl px-5 py-4 text-white outline-none focus:border-gold/50 transition-all appearance-none cursor-pointer text-sm font-medium"
+                                >
+                                    <option value="stage">Stage (3-Judge Avg)</option>
+                                    <option value="non-stage">Non-Stage (Direct)</option>
                                 </select>
                                 <ChevronDown size={16} className="absolute right-5 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" />
                             </div>
@@ -284,21 +329,21 @@ export default function JudgementPanel() {
                             <label className="text-[10px] font-bold text-gray-500 uppercase tracking-[0.2em] ml-1">Select Active Event</label>
                             <div className="relative">
                                 <select 
-                                    disabled={isLocked}
+                                    disabled={isLocked || !selectedLevel}
                                     value={selectedEventId}
                                     onChange={(e) => setSelectedEventId(e.target.value)}
-                                    className="w-full bg-black/60 border border-white/10 rounded-2xl px-5 py-4 text-white outline-none focus:border-gold/50 transition-all appearance-none cursor-pointer text-sm font-medium"
+                                    className="w-full bg-black/60 border border-white/10 rounded-2xl px-5 py-4 text-white outline-none focus:border-gold/50 transition-all appearance-none cursor-pointer text-sm font-medium disabled:opacity-50"
                                 >
-                                    <option value="">-- Choose Competition --</option>
-                                    {competitions
-                                        .filter(c => judge?.category === 'both' || c.category === selectedCategory || c.category === 'both')
-                                        .map(comp => (
-                                            <option key={comp.id} value={comp.id}>{comp.name}</option>
-                                        ))
-                                    }
+                                    <option value="">{selectedLevel ? "-- Choose Competition --" : "-- Select Level First --"}</option>
+                                    {filteredCompetitions.map(comp => (
+                                        <option key={comp.id} value={comp.id}>{comp.name}</option>
+                                    ))}
                                 </select>
                                 <ChevronDown size={16} className="absolute right-5 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" />
                             </div>
+                            {selectedLevel && filteredCompetitions.length === 0 && (
+                                <p className="text-[10px] text-red-400 mt-1 ml-1 font-bold">No competitions available in this category</p>
+                            )}
                         </div>
                     </div>
                 </section>
@@ -326,14 +371,14 @@ export default function JudgementPanel() {
                                 <thead className="bg-white/5 border-b border-white/10">
                                     <tr>
                                         <th className="px-6 py-5 text-[10px] font-bold text-gray-500 uppercase tracking-[0.2em]">Participant Info</th>
-                                        {selectedCategory === 'stage' ? (
+                                        {judgingType === 'stage' ? (
                                             <>
-                                                <th className="px-4 py-5 text-[10px] font-bold text-gray-500 uppercase tracking-[0.2em] text-center">J1 Marks</th>
-                                                <th className="px-4 py-5 text-[10px] font-bold text-gray-500 uppercase tracking-[0.2em] text-center">J2 Marks</th>
-                                                <th className="px-4 py-5 text-[10px] font-bold text-gray-500 uppercase tracking-[0.2em] text-center">J3 Marks</th>
+                                                <th className="px-6 py-5 text-[10px] font-bold text-gray-500 uppercase tracking-[0.2em] text-center">J1 Marks</th>
+                                                <th className="px-6 py-5 text-[10px] font-bold text-gray-500 uppercase tracking-[0.2em] text-center">J2 Marks</th>
+                                                <th className="px-6 py-5 text-[10px] font-bold text-gray-500 uppercase tracking-[0.2em] text-center">J3 Marks</th>
                                             </>
                                         ) : (
-                                            <th className="px-4 py-5 text-[10px] font-bold text-gray-500 uppercase tracking-[0.2em] text-center">Marks</th>
+                                            <th className="px-6 py-5 text-[10px] font-bold text-gray-500 uppercase tracking-[0.2em] text-center">Marks</th>
                                         )}
                                         <th className="px-6 py-5 text-[10px] font-bold text-gray-500 uppercase tracking-[0.2em] text-center">Final</th>
                                         <th className="px-6 py-5 text-[10px] font-bold text-gray-500 uppercase tracking-[0.2em]">Feedback</th>
@@ -370,7 +415,7 @@ export default function JudgementPanel() {
                                                 </select>
                                             </td>
 
-                                            {selectedCategory === 'stage' ? (
+                                            {judgingType === 'stage' ? (
                                                 <>
                                                     <td className="px-2 py-4 text-center">
                                                         <input 
