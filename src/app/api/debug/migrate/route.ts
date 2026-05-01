@@ -17,6 +17,8 @@ export async function GET() {
         console.log('PG connected');
         
         const sql = `
+DROP TABLE IF EXISTS judgements;
+
 CREATE TABLE IF NOT EXISTS judges (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name TEXT NOT NULL,
@@ -29,7 +31,7 @@ CREATE TABLE IF NOT EXISTS judges (
 
 CREATE TABLE IF NOT EXISTS judgements (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    event_id UUID REFERENCES competitions(id),
+    event_id INTEGER REFERENCES competitions(id),
     participant_name TEXT NOT NULL,
     unit_name TEXT NOT NULL,
     judge_1_marks FLOAT8,
