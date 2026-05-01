@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { PlusCircle, Calendar, Image as ImageIcon, Trash2, Edit2, X, Save, Edit3 } from "lucide-react";
+import { PlusCircle, Calendar, Trash2, Edit2, X, Save, Edit3 } from "lucide-react";
 
 interface Event {
     id: number;
