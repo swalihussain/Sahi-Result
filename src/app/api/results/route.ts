@@ -27,14 +27,22 @@ export async function POST(request: Request) {
 
     const body = await request.json();
     
+    // Safety check: if team_id/code_letter is missing, skip insertion
+    if (!body.competition_id || (!body.team_id && !body.code_letter)) {
+        return NextResponse.json({ success: true, message: 'Skipped invalid entry' });
+    }
+
     // If it's a published result (from Admin), it might not have code_letter or judge_id
     if (isAdmin && !body.code_letter) {
         const { data, error } = await supabase
             .from('results')
             .insert([body])
             .select();
-        if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-        return NextResponse.json(data[0]);
+        if (error) {
+            console.error('Published result insert error:', error);
+            return NextResponse.json({ error: error.message }, { status: 500 });
+        }
+        return NextResponse.json(data[0] || { success: true });
     }
 
     // Standard judging result
@@ -43,8 +51,11 @@ export async function POST(request: Request) {
         .upsert(body, { onConflict: 'competition_id,code_letter,judge_id' })
         .select();
 
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-    return NextResponse.json(data[0]);
+    if (error) {
+        console.error('Judging result upsert error:', error);
+        return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+    return NextResponse.json(data[0] || { success: true });
 }
 
 export async function DELETE(request: Request) {

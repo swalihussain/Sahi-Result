@@ -172,7 +172,7 @@ export default function ResultsManager({ showToast }: { showToast: (msg: string,
 
             // Publish all positions
             const promises = formData.results
-                .filter(res => res.team_id !== "")
+                .filter(res => res.team_id && res.team_id.trim() !== "")
                 .map(res => {
                     const selectedComp = competitions.find(c => c.id.toString() === formData.competition_id);
                     const isGroupEvent = selectedComp?.category?.toUpperCase() === 'GENERAL' || 
