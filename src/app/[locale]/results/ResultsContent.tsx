@@ -39,8 +39,9 @@ function ResultsContent({ initialTitle, initialSubtitle, initialTableHeading }: 
                         existing = {
                             id: current.competition_id, // Use competition_id for navigation
                             competition_id: current.competition_id,
-                            competition_name: current.competition_name,
-                            category: current.category || "General",
+                            competition_name: current.competitions?.name || current.competition_name,
+                            category: current.competitions?.category || current.category || "General",
+                            serial_number: current.competitions?.serial_number || "",
                             pdf_url: current.result_pdf_url,
                             first_place: null,
                             second_place: null,
@@ -256,13 +257,16 @@ function ResultsContent({ initialTitle, initialSubtitle, initialTableHeading }: 
                                         <div className="absolute top-0 right-0 w-32 h-32 md:w-40 md:h-40 bg-gold/5 rounded-full blur-[60px] opacity-0 group-hover/card:opacity-100 transition-opacity duration-700" />
                                         
                                         <div className="w-14 h-14 md:w-20 md:h-20 rounded-full bg-white text-black flex items-center justify-center text-xl md:text-3xl font-black shrink-0 shadow-[0_0_40px_rgba(255,255,255,0.2)] z-10 transition-all duration-500 group-hover/card:scale-110 group-hover/card:bg-gold">
-                                            {index + 1}
+                                            {row.serial_number || index + 1}
                                         </div>
                                         
                                         <div className="flex-1 min-w-0 z-10">
                                             <h3 className="text-white font-bold text-lg md:text-2xl leading-tight uppercase tracking-tight mb-1 md:mb-2 line-clamp-2 group-hover/card:text-gold transition-colors duration-300 font-serif">
                                                 {row.competition_name}
                                             </h3>
+                                            <p className="text-[10px] md:text-xs text-gray-400 uppercase tracking-[0.2em] font-black group-hover/card:text-white/60 transition-colors">
+                                                {row.category}
+                                            </p>
                                         </div>
                                     </motion.div>
                                 </Link>
