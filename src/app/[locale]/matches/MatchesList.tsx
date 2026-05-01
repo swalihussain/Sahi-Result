@@ -9,7 +9,6 @@ interface Competition {
     name: string;
     category: string;
     date: string;
-    match_number?: string;
     template_image?: string;
     description?: string;
 }
@@ -95,11 +94,6 @@ function MatchesList({ initialTitle, initialSubtitle, competitions }: MatchesLis
                                     <div className="px-3 py-1 bg-gold/10 border border-gold/30 rounded-full text-[10px] font-black text-gold uppercase tracking-widest">
                                         {item.category}
                                     </div>
-                                    {item.match_number && (
-                                        <div className="text-[10px] font-black text-gray-500 uppercase tracking-widest">
-                                            Match {item.match_number}
-                                        </div>
-                                    )}
                                 </div>
 
                                 <h3 className="text-2xl font-serif font-bold text-white mb-6 group-hover:text-gold transition-colors leading-tight">

@@ -204,8 +204,6 @@ export default function ResultsManager({ showToast }: { showToast: (msg: string,
                 showToast(isEditing ? "Results updated successfully!" : "All results published successfully!", "success");
                 setFormData({
                     competition_id: "",
-                    serial_number: "",
-                    match_number: "",
                     results: [
                         { position: "1", team_id: "", participant_names: "" },
                         { position: "2", team_id: "", participant_names: "" },
@@ -215,7 +213,7 @@ export default function ResultsManager({ showToast }: { showToast: (msg: string,
                 });
                 
                 // Migrations for existing DBs
-                const columns = ['serial_number', 'match_number', 'competition_type', 'template_image', 'description', 'results_only'];
+                const columns = ['competition_type', 'template_image', 'description', 'results_only'];
                 const selectedComp = competitions.find(c => c.id.toString() === formData.competition_id);
                 if (selectedComp) {
                     const updatedCompData: any = { ...selectedComp };
@@ -225,14 +223,6 @@ export default function ResultsManager({ showToast }: { showToast: (msg: string,
                             updatedCompData[col] = null; // Or a suitable default value
                             needsUpdate = true;
                         }
-                    }
-                    if (formData.serial_number !== undefined) {
-                        updatedCompData.serial_number = formData.serial_number;
-                        needsUpdate = true;
-                    }
-                    if (formData.match_number !== undefined) {
-                        updatedCompData.match_number = formData.match_number;
-                        needsUpdate = true;
                     }
 
                     if (needsUpdate) {
@@ -272,7 +262,7 @@ export default function ResultsManager({ showToast }: { showToast: (msg: string,
             const exists = competitions.find(c => c.name === programName && c.category === selectedAdminCategory);
             if (exists) {
                 showToast("This program already exists in this category", "error");
-                setFormData({ ...formData, competition_id: exists.id.toString(), serial_number: exists.serial_number || "", match_number: exists.match_number || "" });
+                setFormData({ ...formData, competition_id: exists.id.toString() });
                 setAddingBulk(false);
                 return;
             }
@@ -303,7 +293,7 @@ export default function ResultsManager({ showToast }: { showToast: (msg: string,
                 // Select the newly created event
                 const added = freshData.find((c: any) => c.name === programName && c.category === selectedAdminCategory);
                 if (added) {
-                    setFormData({ ...formData, competition_id: added.id.toString(), serial_number: "", match_number: "" });
+                    setFormData({ ...formData, competition_id: added.id.toString() });
                 }
             }
         } catch {
@@ -327,7 +317,7 @@ export default function ResultsManager({ showToast }: { showToast: (msg: string,
             const res = await fetch(`/api/competitions/${compId}`, { method: "DELETE" });
             if (res.ok) {
                 showToast("Program deleted", "success");
-                setFormData({ ...formData, competition_id: "", serial_number: "", match_number: "" });
+                setFormData({ ...formData, competition_id: "" });
                 fetchInitialData();
             }
         } catch {
@@ -480,7 +470,7 @@ export default function ResultsManager({ showToast }: { showToast: (msg: string,
                                     <option value="">{selectedAdminCategory === "All" ? "-- Select Category First --" : filteredCompetitions.length === 0 ? "-- No Competitions Found --" : "-- Choose Competition --"}</option>
                                     {filteredCompetitions.map(c => (
                                         <option key={c.id} value={c.id.toString()}>
-                                            {c.name} {c.match_number ? `(Match ${c.match_number})` : ""} [{c.category}]
+                                            {c.name} [{c.category}]
                                         </option>
                                     ))}
                                 </select>
@@ -633,8 +623,6 @@ export default function ResultsManager({ showToast }: { showToast: (msg: string,
                             setExistingFileUrls([]);
                             setFormData({
                                 competition_id: "",
-                                serial_number: "",
-                                match_number: "",
                                 results: [
                                     { position: "1", team_id: "", participant_names: "" },
                                     { position: "2", team_id: "", participant_names: "" },
@@ -693,8 +681,6 @@ export default function ResultsManager({ showToast }: { showToast: (msg: string,
                                             const comp = competitions.find(c => c.id.toString() === res.competition_id.toString());
                                             setFormData({
                                                 competition_id: res.competition_id.toString(),
-                                                serial_number: comp?.serial_number || "",
-                                                match_number: comp?.match_number || "",
                                                 results: newResults
                                             });
                                             window.scrollTo({ top: 0, behavior: 'smooth' });

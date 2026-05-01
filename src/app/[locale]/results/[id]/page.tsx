@@ -338,7 +338,7 @@ export default function ResultDetailsPage() {
                                             className="font-medium text-[32px] uppercase tracking-[0.2em] opacity-90"
                                             style={{ color: styles.text }}
                                         >
-                                            {competition.match_number ? `MATCH ${competition.match_number}` : ""} {competition.match_number && competition.category ? "•" : ""} {competition.category || ""}
+                                            {competition.category || ""}
                                         </span>
                                     </div>
                                     <h1
@@ -358,13 +358,13 @@ export default function ResultDetailsPage() {
                                             className="font-black text-[14px] uppercase tracking-[4px] leading-none mb-3"
                                             style={{ color: styles.meta }}
                                         >
-                                            Result No.
+                                            Result ID
                                         </span>
                                         <span
                                             className="font-black text-[86px] leading-none tracking-tighter"
                                             style={{ color: styles.text }}
                                         >
-                                            {competition.serial_number || id}
+                                            {id}
                                         </span>
                                     </div>
                                 </div>

@@ -115,12 +115,6 @@ export default function MatchesManager({ showToast }: { showToast: (msg: string,
                                     <h4 className="font-bold text-sm text-white">{c.name}</h4>
                                     <div className="flex items-center gap-2 text-[10px] text-gray-500 uppercase tracking-wider font-semibold">
                                         <span>{c.category}</span>
-                                        {c.match_number && (
-                                            <>
-                                                <span className="text-gold">•</span>
-                                                <span className="text-gold-light">Match {c.match_number}</span>
-                                            </>
-                                        )}
                                     </div>
                                 </div>
                             </div>

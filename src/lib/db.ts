@@ -51,8 +51,6 @@ export async function initDb() {
       name TEXT NOT NULL,
       date TEXT NOT NULL,
       category TEXT NOT NULL,
-      serial_number TEXT,
-      match_number TEXT,
       competition_type TEXT,
       template_image TEXT,
       description TEXT,
@@ -63,8 +61,6 @@ export async function initDb() {
 
   // Migrations for competitions
   const compColumns = [
-    { name: 'serial_number', type: 'TEXT' },
-    { name: 'match_number', type: 'TEXT' },
     { name: 'competition_type', type: 'TEXT' },
     { name: 'template_image', type: 'TEXT' },
     { name: 'description', type: 'TEXT' },
