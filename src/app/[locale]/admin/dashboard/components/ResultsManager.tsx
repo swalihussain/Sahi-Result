@@ -30,8 +30,6 @@ export default function ResultsManager({ showToast }: { showToast: (msg: string,
 
     const [formData, setFormData] = useState({
         competition_id: "",
-        serial_number: "",
-        match_number: "",
         results: [
             { position: "1", team_id: "", participant_names: "" },
             { position: "2", team_id: "", participant_names: "" },
@@ -192,8 +190,6 @@ export default function ResultsManager({ showToast }: { showToast: (msg: string,
                             competition_id: formData.competition_id,
                             team_id: res.team_id,
                             position: res.position,
-                            match_number: formData.match_number,
-                            serial_number: formData.serial_number,
                             points_awarded: points,
                             participant_names: res.participant_names,
                             result_pdf_url: finalFileUrl
@@ -403,7 +399,7 @@ export default function ResultsManager({ showToast }: { showToast: (msg: string,
                             value={selectedAdminCategory}
                             onChange={(e) => {
                                 setSelectedAdminCategory(e.target.value);
-                                setFormData({ ...formData, competition_id: "", serial_number: "", match_number: "" });
+                                setFormData({ ...formData, competition_id: "" });
                             }}
                         >
                             <option value="All">All Categories</option>
@@ -478,8 +474,7 @@ export default function ResultsManager({ showToast }: { showToast: (msg: string,
                                     value={formData.competition_id}
                                     onChange={(e) => {
                                         const compId = e.target.value;
-                                        const comp = competitions.find(c => c.id.toString() === compId);
-                                        setFormData({ ...formData, competition_id: compId, serial_number: comp?.serial_number || "", match_number: comp?.match_number || "" });
+                                        setFormData({ ...formData, competition_id: compId });
                                     }}
                                 >
                                     <option value="">{selectedAdminCategory === "All" ? "-- Select Category First --" : filteredCompetitions.length === 0 ? "-- No Competitions Found --" : "-- Choose Competition --"}</option>
@@ -507,30 +502,6 @@ export default function ResultsManager({ showToast }: { showToast: (msg: string,
                         )}
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:col-span-2">
-                        <div className="space-y-2">
-                            <label className="text-sm font-semibold text-gray-300">Match No.</label>
-                            <input
-                                type="text"
-                                className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-gold transition-colors"
-                                placeholder="e.g. 1"
-                                value={formData.match_number}
-                                onChange={(e) => setFormData({ ...formData, match_number: e.target.value })}
-                            />
-                        </div>
-
-                        <div className="space-y-2">
-                            <label className="text-sm font-semibold text-gray-300">Result Number (Serial)</label>
-                            <input
-                                type="text"
-                                className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-gold transition-colors"
-                                placeholder="e.g. 4"
-                                value={formData.serial_number}
-                                onChange={(e) => setFormData({ ...formData, serial_number: e.target.value })}
-                            />
-                        </div>
-                    </div>
-                    <p className="text-[10px] text-gray-500 italic md:col-span-2">This number (e.g. 4) will appear as "RESULT NO. X" on the poster. You can change it here while publishing.</p>
                 </div>
 
                 <div className="space-y-8 bg-white/5 p-6 rounded-2xl border border-white/10">
