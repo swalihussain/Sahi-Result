@@ -376,20 +376,30 @@ export default function ResultDetailsPage() {
                                     <div key={winner.id} className="flex flex-col gap-[75px]">
                                         {(winner.participant_names || winner.team_name || "").split(/,|\n/).filter(Boolean).map((name: string, nIdx: number) => (
                                             <div key={nIdx} className="flex items-start gap-12">
-                                                {/* Grouped Diamond Bullet */}
-                                                <div className="pt-5 shrink-0">
+                                                {/* Position-based Diamond Bullets */}
+                                                <div className="pt-5 shrink-0 flex flex-col items-center justify-center w-12">
                                                     <svg width="32" height="32" viewBox="0 0 24 24" className="drop-shadow-sm">
                                                         <g fill={
                                                             winner.position === 1 ? '#2563eb' :
                                                                 winner.position === 2 ? '#3b82f6' :
                                                                     winner.position === 3 ? '#60a5fa' : '#93c5fd'
                                                         }>
-                                                            {/* Top Diamond */}
-                                                            <path d="M12 2L16 6L12 10L8 6Z" />
-                                                            {/* Bottom Left */}
-                                                            <path d="M7 11L11 15L7 19L3 15Z" />
-                                                            {/* Bottom Right */}
-                                                            <path d="M17 11L21 15L17 19L13 15Z" />
+                                                            {winner.position === 1 && (
+                                                                <path d="M12 7L17 12L12 17L7 12Z" />
+                                                            )}
+                                                            {winner.position === 2 && (
+                                                                <>
+                                                                    <path d="M12 4L16 8L12 12L8 8Z" />
+                                                                    <path d="M12 12L16 16L12 20L8 16Z" />
+                                                                </>
+                                                            )}
+                                                            {(winner.position === 3 || winner.position > 3) && (
+                                                                <>
+                                                                    <path d="M12 4L16 8L12 12L8 8Z" />
+                                                                    <path d="M7 11L11 15L7 19L3 15Z" />
+                                                                    <path d="M17 11L21 15L17 19L13 15Z" />
+                                                                </>
+                                                            )}
                                                         </g>
                                                     </svg>
                                                 </div>
