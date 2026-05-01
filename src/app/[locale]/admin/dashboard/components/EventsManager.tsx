@@ -2,13 +2,14 @@
 
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { PlusCircle, Calendar, Trash2, Edit2, X, Save, Edit3 } from "lucide-react";
+import { PlusCircle, Calendar, Trash2, Edit2, X, Save, Edit3, Image as ImageIcon } from "lucide-react";
 
 interface Event {
     id: number;
     title: string;
     date: string;
     description: string;
+    image_url?: string;
     created_at?: string;
 }
 
@@ -21,7 +22,9 @@ export default function EventsManager({ showToast }: { showToast: (msg: string, 
         title: "",
         date: "",
         description: "",
+        image_url: "",
     });
+    const [imageFile, setImageFile] = useState<File | null>(null);
 
     const [pageSettings, setPageSettings] = useState({
         events_title: "Events & Sessions",
@@ -75,7 +78,9 @@ export default function EventsManager({ showToast }: { showToast: (msg: string, 
             title: event.title,
             date: event.date,
             description: event.description || "",
+            image_url: event.image_url || "",
         });
+        setImageFile(null);
         window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
@@ -95,7 +100,8 @@ export default function EventsManager({ showToast }: { showToast: (msg: string, 
 
     const resetForm = () => {
         setEditingId(null);
-        setFormData({ title: "", date: "", description: "" });
+        setFormData({ title: "", date: "", description: "", image_url: "" });
+        setImageFile(null);
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -103,13 +109,36 @@ export default function EventsManager({ showToast }: { showToast: (msg: string, 
         setLoading(true);
 
         try {
+            let finalImageUrl = formData.image_url;
+
+            if (imageFile) {
+                const uploadData = new FormData();
+                uploadData.append("file", imageFile);
+                uploadData.append("folder", "event-images");
+
+                const uploadRes = await fetch("/api/upload", {
+                    method: "POST",
+                    body: uploadData,
+                });
+
+                if (uploadRes.ok) {
+                    const uploadResult = await uploadRes.json();
+                    finalImageUrl = uploadResult.fileUrl;
+                } else {
+                    const errorData = await uploadRes.json();
+                    showToast(errorData.error || "Failed to upload image", "error");
+                    setLoading(false);
+                    return;
+                }
+            }
+
             const url = editingId ? `/api/events/${editingId}` : "/api/events";
             const method = editingId ? "PUT" : "POST";
 
             const res = await fetch(url, {
                 method,
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(formData),
+                body: JSON.stringify({ ...formData, image_url: finalImageUrl }),
             });
 
             if (res.ok) {
@@ -213,6 +242,21 @@ export default function EventsManager({ showToast }: { showToast: (msg: string, 
                     </div>
 
                     <div className="space-y-2">
+                        <label className="text-sm font-semibold text-gray-300">Event Image</label>
+                        <div className="flex flex-col gap-3">
+                            <input
+                                type="file"
+                                accept="image/png, image/jpeg, image/jpg, image/webp"
+                                onChange={(e) => setImageFile(e.target.files?.[0] || null)}
+                                className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-xs text-gray-400 file:mr-4 file:py-1 file:px-3 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-gold/10 file:text-gold"
+                            />
+                            {formData.image_url && !imageFile && (
+                                <div className="text-[10px] text-gray-500 italic">Current image: {formData.image_url.split('/').pop()}</div>
+                            )}
+                        </div>
+                    </div>
+
+                    <div className="space-y-2">
                         <label className="text-sm font-semibold text-gray-300">Description (Optional)</label>
                         <textarea
                             className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-gold transition-colors min-h-[100px]"
@@ -251,8 +295,12 @@ export default function EventsManager({ showToast }: { showToast: (msg: string, 
                 <div className="space-y-3 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
                     {events.map((event) => (
                         <div key={event.id} className="glass-card !p-4 flex items-center gap-4 group hover:border-gold/30 transition-all">
-                            <div className="w-12 h-12 rounded-lg bg-gold/10 flex items-center justify-center text-gold flex-shrink-0 border border-gold/20">
-                                <Calendar size={24} />
+                            <div className="w-16 h-16 rounded-lg overflow-hidden flex-shrink-0 border border-white/10 bg-gold/5 flex items-center justify-center">
+                                {event.image_url ? (
+                                    <img src={event.image_url} className="w-full h-full object-cover" alt="" />
+                                ) : (
+                                    <Calendar size={24} className="text-gold/20" />
+                                )}
                             </div>
                             <div className="flex-1 min-w-0">
                                 <h4 className="text-white font-bold text-sm truncate">{event.title}</h4>

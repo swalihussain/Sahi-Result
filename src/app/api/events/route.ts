@@ -22,14 +22,15 @@ export async function POST(request: Request) {
     }
     try {
         const data = await request.json();
-        const { title, date, description } = data;
+        const { title, date, description, image_url } = data;
         if (!title || !date) {
             return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
         }
         const { data: inserted, error } = await supabase.from('events').insert([{
             title,
             date,
-            description
+            description,
+            image_url
         }]).select('id').single();
         if (error) throw error;
         revalidatePath('/', 'layout');

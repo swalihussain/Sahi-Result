@@ -9,6 +9,7 @@ interface Event {
     title: string;
     date: string;
     description?: string;
+    image_url?: string;
 }
 
 interface EventsListProps {
@@ -61,8 +62,18 @@ function EventsList({ initialTitle, initialSubtitle, events, translations }: Eve
                         key={event.id}
                         className="group glass-card overflow-hidden !p-0"
                     >
-                        <div className="aspect-video bg-gold/5 flex items-center justify-center border-b border-white/5 group-hover:bg-gold/10 transition-colors">
-                            <Calendar size={64} className="text-gold/20 group-hover:text-gold/40 transition-all duration-500" />
+                        <div className="aspect-video bg-gold/5 overflow-hidden border-b border-white/5 relative">
+                            {event.image_url ? (
+                                <img 
+                                    src={event.image_url} 
+                                    alt={event.title}
+                                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                                />
+                            ) : (
+                                <div className="w-full h-full flex items-center justify-center">
+                                    <Calendar size={64} className="text-gold/20 group-hover:text-gold/40 transition-all duration-500" />
+                                </div>
+                            )}
                         </div>
 
                         <div className="p-6">
@@ -98,24 +109,43 @@ function EventsList({ initialTitle, initialSubtitle, events, translations }: Eve
                             initial={{ opacity: 0, scale: 0.9, y: 20 }}
                             animate={{ opacity: 1, scale: 1, y: 0 }}
                             exit={{ opacity: 0, scale: 0.9, y: 20 }}
-                            className="w-full max-w-2xl glass-card relative z-10 !p-8 overflow-hidden"
+                            className="w-full max-w-2xl glass-card relative z-10 !p-0 overflow-hidden"
                         >
-                            <div className="flex justify-between items-start mb-6">
-                                <div>
-                                    <div className="text-gold font-bold uppercase tracking-widest text-xs mb-2">{selectedEvent.date}</div>
-                                    <h2 className="text-3xl font-serif font-bold text-white">{selectedEvent.title}</h2>
+                            {selectedEvent.image_url && (
+                                <div className="aspect-video w-full relative">
+                                    <img 
+                                        src={selectedEvent.image_url} 
+                                        alt={selectedEvent.title}
+                                        className="w-full h-full object-cover"
+                                    />
+                                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent" />
+                                    <button 
+                                        onClick={() => setSelectedEvent(null)}
+                                        className="absolute top-4 right-4 p-2 bg-black/40 hover:bg-black/60 text-white rounded-full backdrop-blur-md transition-colors border border-white/10"
+                                    >
+                                        <X size={20} />
+                                    </button>
                                 </div>
-                                <button 
-                                    onClick={() => setSelectedEvent(null)}
-                                    className="p-2 hover:bg-white/5 text-gray-400 rounded-full transition-colors"
-                                >
-                                    <X size={24} />
-                                </button>
-                            </div>
-                            
-                            <div className="text-gray-300 leading-relaxed whitespace-pre-wrap max-h-[400px] overflow-y-auto pr-4 custom-scrollbar">
-                                {selectedEvent.description || "No details available for this event."}
-                            </div>
+                            )}
+                            <div className="p-8">
+                                <div className="flex justify-between items-start mb-6">
+                                    <div>
+                                        <div className="text-gold font-bold uppercase tracking-widest text-xs mb-2">{selectedEvent.date}</div>
+                                        <h2 className="text-3xl font-serif font-bold text-white">{selectedEvent.title}</h2>
+                                    </div>
+                                    {!selectedEvent.image_url && (
+                                        <button 
+                                            onClick={() => setSelectedEvent(null)}
+                                            className="p-2 hover:bg-white/5 text-gray-400 rounded-full transition-colors"
+                                        >
+                                            <X size={24} />
+                                        </button>
+                                    )}
+                                </div>
+                                
+                                <div className="text-gray-300 leading-relaxed whitespace-pre-wrap max-h-[400px] overflow-y-auto pr-4 custom-scrollbar">
+                                    {selectedEvent.description || "No details available for this event."}
+                                </div>
                             
                             <div className="mt-8 flex justify-end">
                                 <button 
@@ -125,10 +155,11 @@ function EventsList({ initialTitle, initialSubtitle, events, translations }: Eve
                                     Close
                                 </button>
                             </div>
-                        </motion.div>
-                    </div>
-                )}
-            </AnimatePresence>
+                        </div>
+                    </motion.div>
+                </div>
+            )}
+        </AnimatePresence>
         </div>
     );
 }
