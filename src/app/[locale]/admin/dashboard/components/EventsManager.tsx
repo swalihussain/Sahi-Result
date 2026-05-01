@@ -287,5 +287,6 @@ export default function EventsManager({ showToast }: { showToast: (msg: string, 
                 </div>
             </div>
         </div>
-    );
+    </div>
+);
 }
