@@ -10,7 +10,7 @@ export async function POST(request: Request) {
     try {
         const formData = await request.formData();
         const file = formData.get('file') as File | null;
-        const folder = formData.get('folder') as string || 'uploads';
+        const folder = formData.get('folder') as string || 'public';
 
         if (!file) {
             return NextResponse.json({ error: 'No file received.' }, { status: 400 });
@@ -22,16 +22,29 @@ export async function POST(request: Request) {
         const filename = `${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.]/g, '_')}`;
         const storagePath = `${folder}/${filename}`;
         
+        // Use result-templates bucket if possible, otherwise fallback to uploads
+        let bucketName = 'result-templates';
+        
         const { data, error } = await supabase.storage
-            .from('uploads')
+            .from(bucketName)
             .upload(storagePath, buffer, {
                 contentType: file.type,
                 upsert: true
             });
 
-        if (error) throw error;
+        if (error) {
+            // Try fallback to 'uploads' bucket if result-templates doesn't exist
+            bucketName = 'uploads';
+            const { data: retryData, error: retryError } = await supabase.storage
+                .from(bucketName)
+                .upload(storagePath, buffer, {
+                    contentType: file.type,
+                    upsert: true
+                });
+            if (retryError) throw retryError;
+        }
 
-        const { data: publicUrlData } = supabase.storage.from('uploads').getPublicUrl(storagePath);
+        const { data: publicUrlData } = supabase.storage.from(bucketName).getPublicUrl(storagePath);
 
         return NextResponse.json({ success: true, fileUrl: publicUrlData.publicUrl });
     } catch (error) {
