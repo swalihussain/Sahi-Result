@@ -5,12 +5,12 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Link } from '@/i18n/routing';
 import { ExternalLink, X } from 'lucide-react';
 
+import { Calendar } from 'lucide-react';
+
 interface Event {
     id: number;
-    name: string;
-    category: string;
+    title: string;
     date: string;
-    template_image?: string;
     description?: string;
 }
 
@@ -28,17 +28,9 @@ interface EventsListProps {
 }
 
 function EventsList({ initialTitle, initialSubtitle, events, translations }: EventsListProps) {
-    const [filter, setFilter] = useState('All');
     const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
 
     const filteredEvents = events;
-
-    const filters = [
-        { label: translations.filterAll, value: 'All' },
-        { label: translations.filterLiterary, value: 'Literary' },
-        { label: translations.filterCultural, value: 'Cultural' },
-        { label: translations.filterSports, value: 'Sports' }
-    ];
 
     return (
         <div className="min-h-screen pt-32 pb-24 px-5 max-w-7xl mx-auto">
@@ -59,7 +51,7 @@ function EventsList({ initialTitle, initialSubtitle, events, translations }: Eve
             >
                 {filteredEvents.length === 0 ? (
                     <div className="col-span-full text-center py-20 text-gray-500">
-                        No events found in this category.
+                        No events scheduled yet.
                     </div>
                 ) : null}
                 {filteredEvents.map((event, i) => (
@@ -72,28 +64,13 @@ function EventsList({ initialTitle, initialSubtitle, events, translations }: Eve
                         key={event.id}
                         className="group glass-card overflow-hidden !p-0"
                     >
-                        <div className="aspect-video overflow-hidden relative">
-                            {event.template_image?.match(/\.(mp4|webm|ogg)$/i) ? (
-                                <video 
-                                    src={event.template_image}
-                                    autoPlay
-                                    loop
-                                    muted
-                                    playsInline
-                                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                                />
-                            ) : (
-                                <img
-                                    src={event.template_image || 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=800&auto=format&fit=crop'}
-                                    alt={event.name}
-                                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                                />
-                            )}
+                        <div className="aspect-video bg-gold/5 flex items-center justify-center border-b border-white/5 group-hover:bg-gold/10 transition-colors">
+                            <Calendar size={64} className="text-gold/20 group-hover:text-gold/40 transition-all duration-500" />
                         </div>
 
                         <div className="p-6">
                             <div className="text-gold text-sm font-medium mb-2">{event.date}</div>
-                            <h3 className="text-xl font-bold mb-4 font-serif">{event.name}</h3>
+                            <h3 className="text-xl font-bold mb-4 font-serif line-clamp-2">{event.title}</h3>
 
                             <div className="flex items-center justify-between">
                                 <button 
@@ -124,46 +101,32 @@ function EventsList({ initialTitle, initialSubtitle, events, translations }: Eve
                             initial={{ opacity: 0, scale: 0.9, y: 20 }}
                             animate={{ opacity: 1, scale: 1, y: 0 }}
                             exit={{ opacity: 0, scale: 0.9, y: 20 }}
-                            className="w-full max-w-2xl glass-card relative z-10 !p-0 overflow-hidden"
+                            className="w-full max-w-2xl glass-card relative z-10 !p-8 overflow-hidden"
                         >
-                            <div className="aspect-video w-full relative">
-                                {selectedEvent.template_image?.match(/\.(mp4|webm|ogg)$/i) ? (
-                                    <video 
-                                        src={selectedEvent.template_image}
-                                        autoPlay
-                                        loop
-                                        muted
-                                        playsInline
-                                        className="w-full h-full object-cover"
-                                    />
-                                ) : (
-                                    <img
-                                        src={selectedEvent.template_image || 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=800&auto=format&fit=crop'}
-                                        alt={selectedEvent.name}
-                                        className="w-full h-full object-cover"
-                                    />
-                                )}
+                            <div className="flex justify-between items-start mb-6">
+                                <div>
+                                    <div className="text-gold font-bold uppercase tracking-widest text-xs mb-2">{selectedEvent.date}</div>
+                                    <h2 className="text-3xl font-serif font-bold text-white">{selectedEvent.title}</h2>
+                                </div>
                                 <button 
                                     onClick={() => setSelectedEvent(null)}
-                                    className="absolute top-4 right-4 p-2 bg-black/40 hover:bg-black/60 text-white rounded-full backdrop-blur-md transition-colors border border-white/10"
+                                    className="p-2 hover:bg-white/5 text-gray-400 rounded-full transition-colors"
                                 >
-                                    <X size={20} />
+                                    <X size={24} />
                                 </button>
                             </div>
-                            <div className="p-8">
-                                <h2 className="text-3xl font-serif font-bold mb-6 text-white">{selectedEvent.name}</h2>
-                                <div className="text-gray-300 leading-relaxed whitespace-pre-wrap max-h-[300px] overflow-y-auto pr-4 custom-scrollbar">
-                                    {selectedEvent.description || "No details available for this event yet."}
-                                </div>
-                                
-                                <div className="mt-8 flex justify-end gap-3">
-                                    <button 
-                                        onClick={() => setSelectedEvent(null)}
-                                        className="px-6 py-3 bg-white/5 hover:bg-white/10 text-white rounded-xl font-bold transition-all border border-white/10"
-                                    >
-                                        Close
-                                    </button>
-                                </div>
+                            
+                            <div className="text-gray-300 leading-relaxed whitespace-pre-wrap max-h-[400px] overflow-y-auto pr-4 custom-scrollbar">
+                                {selectedEvent.description || "No details available for this event."}
+                            </div>
+                            
+                            <div className="mt-8 flex justify-end">
+                                <button 
+                                    onClick={() => setSelectedEvent(null)}
+                                    className="px-8 py-3 bg-white/5 hover:bg-white/10 text-white rounded-xl font-bold transition-all border border-white/10"
+                                >
+                                    Close
+                                </button>
                             </div>
                         </motion.div>
                     </div>

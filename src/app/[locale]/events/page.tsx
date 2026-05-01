@@ -19,7 +19,7 @@ export default async function EventsPage() {
     const t = await getTranslations('Events');
     
     let dynamicSettings: Record<string, string> = {};
-    let competitions: any[] = [];
+    let events: any[] = [];
     
     try {
         const { data: settingsSnap } = await supabase.from('settings').select('*');
@@ -29,9 +29,9 @@ export default async function EventsPage() {
             });
         }
         
-        const { data: compsSnap } = await supabase.from('competitions').select('*').eq('results_only', 0).order('date', { ascending: true });
-        if (compsSnap) {
-            competitions = compsSnap;
+        const { data: eventsSnap } = await supabase.from('events').select('*').order('date', { ascending: true });
+        if (eventsSnap) {
+            events = eventsSnap;
         }
     } catch (e) {
         console.error("Events fetch failed", e);
@@ -44,7 +44,7 @@ export default async function EventsPage() {
         <EventsList 
             initialTitle={pageTitle}
             initialSubtitle={pageSubtitle}
-            events={competitions}
+            events={events}
             translations={{
                 filterAll: t('filterAll'),
                 filterLiterary: t('filterLiterary'),

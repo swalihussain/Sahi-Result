@@ -58,9 +58,18 @@ CREATE TABLE IF NOT EXISTS results (
     UNIQUE(competition_id, code_letter, judge_id)
 );
 
+CREATE TABLE IF NOT EXISTS events (
+    id SERIAL PRIMARY KEY,
+    title TEXT NOT NULL,
+    date TEXT NOT NULL,
+    description TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
 ALTER TABLE judges DISABLE ROW LEVEL SECURITY;
 ALTER TABLE participants DISABLE ROW LEVEL SECURITY;
 ALTER TABLE results DISABLE ROW LEVEL SECURITY;
+ALTER TABLE events DISABLE ROW LEVEL SECURITY;
 
 -- Re-insert demo judge
 INSERT INTO judges (name, email, password, category, status)
