@@ -12,16 +12,12 @@ export async function GET(request: Request) {
         .from('results')
         .select(`
             *,
-            units (
-                unit_name
-            ),
             competitions (
                 name,
                 category,
                 serial_number
             )
-        `)
-        .order('serial_number', { foreignTable: 'competitions', ascending: true });
+        `);
     if (competition_id) {
         query = query.eq('competition_id', competition_id);
     }

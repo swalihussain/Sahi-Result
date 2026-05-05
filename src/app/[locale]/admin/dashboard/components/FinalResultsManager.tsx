@@ -43,9 +43,13 @@ export default function FinalResultsManager({ showToast }: { showToast: (msg: st
                 fetch('/api/competitions')
             ]);
 
-            const resultsData = await res1.json();
-            const participantsData = await res2.json();
-            const compsData = await res3.json();
+            const rRaw = await res1.json();
+            const pRaw = await res2.json();
+            const cRaw = await res3.json();
+
+            const resultsData = Array.isArray(rRaw) ? rRaw : [];
+            const participantsData = Array.isArray(pRaw) ? pRaw : [];
+            const compsData = Array.isArray(cRaw) ? cRaw : [];
 
             // Merge results with participants
             const merged = resultsData.map((r: Result) => {
