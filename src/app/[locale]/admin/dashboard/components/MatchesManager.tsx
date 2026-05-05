@@ -22,7 +22,7 @@ export default function MatchesManager({ showToast }: { showToast: (msg: string,
                 });
             }
         });
-        fetch("/api/competitions").then(res => res.json()).then(data => setCompetitions(data));
+        fetch("/api/competitions").then(res => res.json()).then(data => setCompetitions(Array.isArray(data) ? data : []));
     }, []);
 
     const handleSavePageSettings = async () => {

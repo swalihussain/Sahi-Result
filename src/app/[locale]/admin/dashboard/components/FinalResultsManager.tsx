@@ -160,7 +160,7 @@ export default function FinalResultsManager({ showToast }: { showToast: (msg: st
                                 </td>
                                 <td className="px-6 py-4 text-sm text-gray-300">{r.unit_name}</td>
                                 <td className="px-6 py-4 text-center font-serif font-black text-lg gold-gradient-text">
-                                    {r.final_marks.toFixed(1)}
+                                    {(r.final_marks || 0).toFixed(1)}
                                 </td>
                                 <td className="px-6 py-4">
                                     <p className="text-xs text-gray-500 italic max-w-xs">&ldquo;{r.feedback || '...'}&rdquo;</p>
@@ -199,7 +199,7 @@ export default function FinalResultsManager({ showToast }: { showToast: (msg: st
                                 <td className="border-2 border-black px-4 py-4 text-center font-bold text-xl">{r.rank}</td>
                                 <td className="border-2 border-black px-4 py-4 font-bold">{r.participant_name}</td>
                                 <td className="border-2 border-black px-4 py-4">{r.unit_name}</td>
-                                <td className="border-2 border-black px-4 py-4 text-center font-bold">{r.final_marks.toFixed(1)}</td>
+                                <td className="border-2 border-black px-4 py-4 text-center font-bold">{(r.final_marks || 0).toFixed(1)}</td>
                             </tr>
                         ))}
                     </tbody>
