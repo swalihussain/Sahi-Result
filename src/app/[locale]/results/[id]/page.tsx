@@ -151,14 +151,26 @@ export default function ResultDetailsPage() {
         if (!printRef.current || !competition) return;
         setDownloading(true);
         try {
-            // Ensure fonts are loaded before capture to prevent layout shift
+            // 1. Ensure fonts are fully loaded
             if (typeof document !== 'undefined' && 'fonts' in document) {
                 await (document as any).fonts.ready;
             }
+
+            // 2. Ensure all images are loaded before rendering
+            const images = Array.from(printRef.current.querySelectorAll('img'));
+            await Promise.all(images.map(img => {
+                if (img.complete) return Promise.resolve();
+                return new Promise(resolve => {
+                    img.onload = resolve;
+                    img.onerror = resolve;
+                });
+            }));
+
             const html2canvas = (await import('html2canvas')).default;
             const canvas = await html2canvas(printRef.current, {
-                scale: 3, // Increased scale for even higher quality
+                scale: 3, 
                 useCORS: true,
+                allowTaint: true,
                 backgroundColor: styles.bg,
                 width: 1080,
                 height: 1350,
@@ -176,6 +188,21 @@ export default function ResultDetailsPage() {
                         el.style.position = 'relative';
                         el.style.margin = '0';
                         el.style.padding = '0';
+                        el.style.overflow = 'hidden';
+                        
+                        // Force consistent font rendering and line heights
+                        const allElements = el.querySelectorAll('*');
+                        allElements.forEach(node => {
+                            const htmlNode = node as HTMLElement;
+                            htmlNode.style.setProperty('font-family', "'Inter', 'Arial', sans-serif", 'important');
+                            
+                            // Prevent margin collapse and layout shifts
+                            if (htmlNode.tagName === 'P' || htmlNode.tagName === 'H1' || htmlNode.tagName === 'H3') {
+                                if (!htmlNode.style.lineHeight) {
+                                    htmlNode.style.lineHeight = '1.2';
+                                }
+                            }
+                        });
                     }
                 }
             });
@@ -346,7 +373,7 @@ export default function ResultDetailsPage() {
                                         </span>
                                     </div>
                                     <h1
-                                        className="font-normal text-[72px] leading-[1] uppercase tracking-tighter drop-shadow-sm"
+                                        className="font-normal text-[72px] leading-[1.1] uppercase tracking-tighter drop-shadow-sm"
                                         style={{ color: styles.text }}
                                     >
                                         {competition.name}
@@ -411,7 +438,7 @@ export default function ResultDetailsPage() {
                                                 {/* Info Block */}
                                                 <div className="flex flex-col">
                                                     <h3
-                                                        className="font-semibold text-[52px] uppercase leading-[1.1] tracking-tight mb-1"
+                                                        className="font-semibold text-[52px] uppercase leading-[1.2] tracking-tight mb-1"
                                                         style={{ color: styles.text }}
                                                     >
                                                         {name.trim()}
