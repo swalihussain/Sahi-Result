@@ -7,7 +7,7 @@ export const revalidate = 60;
 
 export async function GET() {
     try {
-        const { data: competitions, error } = await supabase.from('competitions').select('*').order('created_at', { ascending: false });
+        const { data: competitions, error } = await supabase.from('competitions').select('*').order('serial_number', { ascending: true });
         if (error) throw error;
         return NextResponse.json(competitions || []);
     } catch (error) {

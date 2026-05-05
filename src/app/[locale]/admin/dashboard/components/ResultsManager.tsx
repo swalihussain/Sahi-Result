@@ -50,7 +50,12 @@ export default function ResultsManager({ showToast }: { showToast: (msg: string,
                 if (!selectedAdminCategory || selectedAdminCategory === "All") return true;
                 return String(c.category || '').toLowerCase().trim() === String(selectedAdminCategory).toLowerCase().trim();
             })
-            .sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+            .sort((a, b) => {
+                const numA = parseInt(a.serial_number) || 999;
+                const numB = parseInt(b.serial_number) || 999;
+                if (numA !== numB) return numA - numB;
+                return (a.name || '').localeCompare(b.name || '');
+            });
     }, [competitions, selectedAdminCategory]);
 
     const fetchInitialData = async () => {
@@ -94,7 +99,12 @@ export default function ResultsManager({ showToast }: { showToast: (msg: string,
                     existing.winners.push(current);
                     return acc;
                 }, []);
-                setPublishedResults(grouped);
+                setPublishedResults(grouped.sort((a: any, b: any) => {
+                    const numA = parseInt(a.serial_number) || 999;
+                    const numB = parseInt(b.serial_number) || 999;
+                    if (numA !== numB) return numA - numB;
+                    return (a.competition_name || '').localeCompare(b.competition_name || '');
+                }));
             } else {
                 setPublishedResults([]);
             }

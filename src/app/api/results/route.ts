@@ -20,7 +20,8 @@ export async function GET(request: Request) {
                 category,
                 serial_number
             )
-        `);
+        `)
+        .order('serial_number', { foreignTable: 'competitions', ascending: true });
     if (competition_id) {
         query = query.eq('competition_id', competition_id);
     }

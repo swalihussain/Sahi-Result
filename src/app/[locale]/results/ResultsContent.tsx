@@ -60,7 +60,12 @@ function ResultsContent({ initialTitle, initialSubtitle, initialTableHeading }: 
                     
                     return acc;
                 }, []);
-                setResultsData(grouped);
+                setResultsData(grouped.sort((a: any, b: any) => {
+                    const numA = parseInt(a.serial_number) || 999;
+                    const numB = parseInt(b.serial_number) || 999;
+                    if (numA !== numB) return numA - numB;
+                    return (a.competition_name || '').localeCompare(b.competition_name || '');
+                }));
             });
         
         // Fetch current points status
