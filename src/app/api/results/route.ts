@@ -54,7 +54,14 @@ export async function POST(request: Request) {
         participant_names, 
         result_pdf_url,
         code_letter,
-        judge_id
+        judge_id,
+        judge1_marks,
+        judge2_marks,
+        judge3_marks,
+        final_marks,
+        rank,
+        feedback,
+        status
     } = body;
 
     const resultData: any = {
@@ -63,7 +70,14 @@ export async function POST(request: Request) {
         position,
         points_awarded,
         participant_names,
-        result_pdf_url
+        result_pdf_url,
+        judge1_marks,
+        judge2_marks,
+        judge3_marks,
+        final_marks,
+        rank,
+        feedback,
+        status
     };
 
     // If it's a published result (from Admin), it might not have code_letter or judge_id
