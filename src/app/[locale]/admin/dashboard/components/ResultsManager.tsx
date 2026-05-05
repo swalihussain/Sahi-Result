@@ -2,8 +2,9 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
-import { ArrowLeft, Download, Trophy, ArrowRightLeft, Share2, X, Award, ChevronDown, Save, Edit3, Plus, ListPlus, Check, PlusCircle, Trash2 } from 'lucide-react';
+import { ArrowLeft, Download, Trophy, ArrowRightLeft, Share2, X, Award, ChevronDown, Save, Edit3, Plus, ListPlus, Check, PlusCircle, Trash2, Upload } from 'lucide-react';
 import { PRESET_PROGRAMS, CATEGORIES } from '@/lib/constants';
+import * as XLSX from 'xlsx';
 
 export default function ResultsManager({ showToast }: { showToast: (msg: string, type: 'success' | 'error') => void }) {
     const [loading, setLoading] = useState(false);
@@ -334,6 +335,165 @@ export default function ResultsManager({ showToast }: { showToast: (msg: string,
         }
     };
 
+    const handleExcelUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = async (evt) => {
+            try {
+                const bstr = evt.target?.result;
+                const wb = XLSX.read(bstr, { type: 'binary' });
+                const wsname = wb.SheetNames[0];
+                const ws = wb.Sheets[wsname];
+                const data = XLSX.utils.sheet_to_json(ws);
+
+                if (data.length === 0) {
+                    showToast("Excel file is empty", "error");
+                    return;
+                }
+
+                setLoading(true);
+                const resultsToProcess: any[] = [];
+                const errors: string[] = [];
+
+                for (let i = 0; i < data.length; i++) {
+                    const row: any = data[i];
+                    const compName = row['Competition Name'];
+                    const category = row['Category'];
+                    const position = row['Position'];
+                    const unitName = row['Unit'];
+                    const participantNames = row['Participant Name'];
+                    const resultNumber = row['Result Number'];
+
+                    if (!compName || !category || !position || !unitName) {
+                        errors.push(`Row ${i + 2}: Missing required fields (Competition Name, Category, Position, Unit)`);
+                        continue;
+                    }
+
+                    const comp = competitions.find(c => 
+                        String(c.name).toLowerCase().trim() === String(compName).toLowerCase().trim() && 
+                        String(c.category).toLowerCase().trim() === String(category).toLowerCase().trim()
+                    );
+
+                    if (!comp) {
+                        errors.push(`Row ${i + 2}: Competition "${compName}" in category "${category}" not found`);
+                        continue;
+                    }
+
+                    const unit = units.find(u => String(u.unit_name).toLowerCase().trim() === String(unitName).toLowerCase().trim());
+                    if (!unit) {
+                        errors.push(`Row ${i + 2}: Unit "${unitName}" not found`);
+                        continue;
+                    }
+
+                    const posStr = String(position);
+                    if (!['1', '2', '3', '4'].includes(posStr)) {
+                        errors.push(`Row ${i + 2}: Invalid position "${position}". Must be 1, 2, 3, or 4.`);
+                        continue;
+                    }
+
+                    resultsToProcess.push({
+                        competition_id: comp.id,
+                        team_id: unit.id,
+                        position: posStr,
+                        participant_names: participantNames || "",
+                        serial_number: resultNumber ? resultNumber.toString() : comp.serial_number,
+                        compObj: comp
+                    });
+                }
+
+                if (errors.length > 0) {
+                    showToast(errors[0], "error"); // Show first error
+                    setLoading(false);
+                    return;
+                }
+
+                // Group by competition
+                const groupedByComp = resultsToProcess.reduce((acc, curr) => {
+                    if (!acc[curr.competition_id]) {
+                        acc[curr.competition_id] = {
+                            results: [],
+                            serial_number: curr.serial_number,
+                            compObj: curr.compObj
+                        };
+                    }
+                    acc[curr.competition_id].results.push(curr);
+                    return acc;
+                }, {} as any);
+
+                // Process each competition
+                for (const compId in groupedByComp) {
+                    const group = groupedByComp[compId];
+                    
+                    // Clear existing
+                    await fetch(`/api/results?competition_id=${compId}`, { method: "DELETE" });
+
+                    // Update serial number if changed
+                    if (group.serial_number && group.serial_number !== group.compObj.serial_number) {
+                         await fetch(`/api/competitions/${compId}`, {
+                            method: "PUT",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ ...group.compObj, serial_number: group.serial_number })
+                        });
+                    }
+
+                    // Insert results
+                    for (const res of group.results) {
+                        const isGroupEvent = res.compObj.category?.toUpperCase() === 'GENERAL' || 
+                                           res.compObj.name?.toUpperCase().includes('GROUP');
+                        
+                        let points = "0";
+                        if (isGroupEvent) {
+                            points = res.position === '1' ? '15' : res.position === '2' ? '10' : res.position === '3' ? '5' : '0';
+                        } else {
+                            points = res.position === '1' ? '10' : res.position === '2' ? '5' : res.position === '3' ? '2' : '0';
+                        }
+
+                        await fetch("/api/results", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({
+                                competition_id: compId,
+                                team_id: res.team_id,
+                                position: res.position,
+                                points_awarded: points,
+                                participant_names: res.participant_names,
+                            }),
+                        });
+                    }
+                }
+
+                showToast("Bulk results uploaded successfully!", "success");
+                fetchInitialData();
+            } catch (error) {
+                console.error("Excel processing error:", error);
+                showToast("Failed to process Excel file", "error");
+            } finally {
+                setLoading(false);
+                if (e.target) e.target.value = ""; // Reset input
+            }
+        };
+        reader.readAsBinaryString(file);
+    };
+
+    const downloadTemplate = () => {
+        const templateData = [
+            {
+                "Competition Name": "Elocution",
+                "Category": "High School",
+                "Position": "1",
+                "Unit": "Unit Name",
+                "Participant Name": "Participant Name",
+                "Result Number": "1"
+            }
+        ];
+        const ws = XLSX.utils.json_to_sheet(templateData);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Results");
+        XLSX.writeFile(wb, "Results_Template.xlsx");
+    };
+
     return (
         <div className="space-y-12">
             {/* Page Header Editor */}
@@ -385,6 +545,30 @@ export default function ResultsManager({ showToast }: { showToast: (msg: string,
                             : "Award points to participants for specific events."}
                     </p>
                 </div>
+
+                {!isEditing && (
+                    <div className="flex gap-3">
+                        <button 
+                            type="button"
+                            onClick={downloadTemplate}
+                            className="flex items-center gap-2 px-5 py-3 bg-white/5 hover:bg-white/10 text-gray-400 rounded-xl border border-white/10 transition-all text-xs font-black uppercase tracking-widest"
+                        >
+                            <Download size={18} />
+                            <span>Template</span>
+                        </button>
+                        <label className="cursor-pointer flex items-center gap-2 px-5 py-3 bg-green-600/10 hover:bg-green-600/20 text-green-500 rounded-xl border border-green-600/30 transition-all text-xs font-black uppercase tracking-widest">
+                            <Upload size={18} />
+                            <span>Upload Excel</span>
+                            <input 
+                                type="file" 
+                                accept=".xlsx, .xls" 
+                                className="hidden" 
+                                onChange={handleExcelUpload}
+                                disabled={loading}
+                            />
+                        </label>
+                    </div>
+                )}
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-6">
