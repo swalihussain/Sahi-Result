@@ -11,6 +11,7 @@ export default function ResultsManager({ showToast }: { showToast: (msg: string,
     const [competitions, setCompetitions] = useState<any[]>([]);
     const [units, setUnits] = useState<any[]>([]);
     const [publishedResults, setPublishedResults] = useState<any[]>([]);
+    const [bulkPreview, setBulkPreview] = useState<any[]>([]);
     const [isEditing, setIsEditing] = useState(false);
     const [addingBulk, setAddingBulk] = useState(false);
     const [showCustomAdd, setShowCustomAdd] = useState(false);
@@ -422,50 +423,34 @@ export default function ResultsManager({ showToast }: { showToast: (msg: string,
                     return acc;
                 }, {} as any);
 
-                // Process each competition
-                for (const compId in groupedByComp) {
+                const previewArray = Object.keys(groupedByComp).map(compId => {
                     const group = groupedByComp[compId];
-                    
-                    // Clear existing
-                    await fetch(`/api/results?competition_id=${compId}`, { method: "DELETE" });
-
-                    // Update serial number if changed
-                    if (group.serial_number && group.serial_number !== group.compObj.serial_number) {
-                         await fetch(`/api/competitions/${compId}`, {
-                            method: "PUT",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({ ...group.compObj, serial_number: group.serial_number })
-                        });
-                    }
-
-                    // Insert results
-                    for (const res of group.results) {
-                        const isGroupEvent = res.compObj.category?.toUpperCase() === 'GENERAL' || 
-                                           res.compObj.name?.toUpperCase().includes('GROUP');
-                        
-                        let points = "0";
-                        if (isGroupEvent) {
-                            points = res.position === '1' ? '15' : res.position === '2' ? '10' : res.position === '3' ? '5' : '0';
-                        } else {
-                            points = res.position === '1' ? '10' : res.position === '2' ? '5' : res.position === '3' ? '2' : '0';
+                    const winners = group.results;
+                    const finalResults = [
+                        { position: "1", team_id: "", participant_names: "" },
+                        { position: "2", team_id: "", participant_names: "" },
+                        { position: "3", team_id: "", participant_names: "" },
+                        { position: "4", team_id: "", participant_names: "" }
+                    ];
+                    winners.forEach((w: any) => {
+                        const idx = parseInt(w.position) - 1;
+                        if (idx >= 0 && idx < 4) {
+                            finalResults[idx].team_id = w.team_id.toString();
+                            finalResults[idx].participant_names = w.participant_names;
                         }
+                    });
 
-                        await fetch("/api/results", {
-                            method: "POST",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({
-                                competition_id: compId,
-                                team_id: res.team_id,
-                                position: res.position,
-                                points_awarded: points,
-                                participant_names: res.participant_names,
-                            }),
-                        });
-                    }
-                }
+                    return {
+                        competition_id: compId,
+                        competition_name: group.compObj.name,
+                        category: group.compObj.category,
+                        serial_number: group.serial_number,
+                        results: finalResults
+                    };
+                });
 
-                showToast("Bulk results uploaded successfully!", "success");
-                fetchInitialData();
+                setBulkPreview(previewArray);
+                showToast(`${previewArray.length} competitions found in Excel. Review and publish below.`, "success");
             } catch (error) {
                 console.error("Excel processing error:", error);
                 showToast("Failed to process Excel file", "error");
@@ -475,6 +460,62 @@ export default function ResultsManager({ showToast }: { showToast: (msg: string,
             }
         };
         reader.readAsBinaryString(file);
+    };
+
+    const handleBulkPublish = async () => {
+        setLoading(true);
+        try {
+            for (const item of bulkPreview) {
+                // Delete existing
+                await fetch(`/api/results?competition_id=${item.competition_id}`, { method: "DELETE" });
+
+                // Update competition serial
+                const comp = competitions.find(c => c.id.toString() === item.competition_id.toString());
+                if (comp && item.serial_number !== comp.serial_number) {
+                     await fetch(`/api/competitions/${item.competition_id}`, {
+                        method: "PUT",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ ...comp, serial_number: item.serial_number })
+                    });
+                }
+
+                // Post results
+                const promises = item.results
+                    .filter((res: any) => res.team_id && res.team_id.trim() !== "")
+                    .map((res: any) => {
+                        const isGroupEvent = item.category?.toUpperCase() === 'GENERAL' || 
+                                           item.competition_name?.toUpperCase().includes('GROUP');
+                        
+                        let points = "0";
+                        if (isGroupEvent) {
+                            points = res.position === '1' ? '15' : res.position === '2' ? '10' : res.position === '3' ? '5' : '0';
+                        } else {
+                            points = res.position === '1' ? '10' : res.position === '2' ? '5' : res.position === '3' ? '2' : '0';
+                        }
+
+                        return fetch("/api/results", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({
+                                competition_id: item.competition_id,
+                                team_id: res.team_id,
+                                position: res.position,
+                                points_awarded: points,
+                                participant_names: res.participant_names,
+                            }),
+                        });
+                    });
+                await Promise.all(promises);
+            }
+            showToast("All results published successfully!", "success");
+            setBulkPreview([]);
+            fetchInitialData();
+        } catch (error) {
+            console.error("Bulk publish error:", error);
+            showToast("Failed to publish some results", "error");
+        } finally {
+            setLoading(false);
+        }
     };
 
     const downloadTemplate = () => {
@@ -570,8 +611,108 @@ export default function ResultsManager({ showToast }: { showToast: (msg: string,
                     </div>
                 )}
             </div>
+            
+            {bulkPreview.length > 0 ? (
+                <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                    <div className="p-6 bg-green-500/10 border border-green-500/20 rounded-2xl flex items-center justify-between">
+                        <div>
+                            <h3 className="text-xl font-bold text-green-500">Bulk Upload Preview</h3>
+                            <p className="text-sm text-green-500/70">Review and edit the results from your Excel file before publishing.</p>
+                        </div>
+                        <div className="flex gap-3">
+                            <button 
+                                onClick={() => setBulkPreview([])}
+                                className="px-4 py-2 bg-white/5 hover:bg-white/10 text-white rounded-xl text-sm font-bold border border-white/10"
+                            >
+                                Cancel
+                            </button>
+                            <button 
+                                onClick={handleBulkPublish}
+                                disabled={loading}
+                                className="px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-xl text-sm font-black uppercase tracking-widest transition-all disabled:opacity-50 shadow-[0_0_20px_rgba(22,163,74,0.3)]"
+                            >
+                                {loading ? "Publishing..." : "Publish All Results"}
+                            </button>
+                        </div>
+                    </div>
 
-            <form onSubmit={handleSubmit} className="space-y-6">
+                    <div className="grid grid-cols-1 gap-6">
+                        {bulkPreview.map((item, pIdx) => (
+                            <div key={pIdx} className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden">
+                                <div className="p-5 bg-white/5 border-b border-white/10 flex items-center justify-between">
+                                    <div className="flex items-center gap-3">
+                                        <div className="px-3 py-1 bg-gold/10 border border-gold/30 text-gold rounded-lg text-xs font-black uppercase tracking-widest">
+                                            {item.category}
+                                        </div>
+                                        <h4 className="text-lg font-bold text-white uppercase tracking-tight">{item.competition_name}</h4>
+                                    </div>
+                                    <div className="flex items-center gap-4">
+                                        <div className="flex items-center gap-2">
+                                            <label className="text-[10px] font-bold text-gray-500 uppercase">Serial</label>
+                                            <input 
+                                                type="text"
+                                                value={item.serial_number}
+                                                onChange={(e) => {
+                                                    const next = [...bulkPreview];
+                                                    next[pIdx].serial_number = e.target.value;
+                                                    setBulkPreview(next);
+                                                }}
+                                                className="w-16 bg-black/40 border border-white/10 rounded-lg px-2 py-1 text-sm text-white focus:border-gold outline-none text-center"
+                                            />
+                                        </div>
+                                        <button 
+                                            onClick={() => setBulkPreview(prev => prev.filter((_, i) => i !== pIdx))}
+                                            className="p-2 text-gray-500 hover:text-red-500 transition-colors"
+                                        >
+                                            <Trash2 size={18} />
+                                        </button>
+                                    </div>
+                                </div>
+                                <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+                                    {item.results.map((res: any, rIdx: number) => (
+                                        <div key={rIdx} className="space-y-3">
+                                            <div className="flex items-center gap-2">
+                                                <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black ${rIdx === 0 ? 'bg-gold text-black' : rIdx === 1 ? 'bg-gray-400 text-black' : rIdx === 2 ? 'bg-orange-400 text-black' : 'bg-blue-400 text-black'}`}>
+                                                    {rIdx + 1}
+                                                </div>
+                                                <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">
+                                                    {rIdx === 0 ? '1st' : rIdx === 1 ? '2nd' : rIdx === 2 ? '3rd' : '4th'} Place
+                                                </span>
+                                            </div>
+                                            <div className="flex gap-2">
+                                                <select
+                                                    className="flex-1 bg-black/40 border border-white/10 rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-gold"
+                                                    value={res.team_id}
+                                                    onChange={(e) => {
+                                                        const next = [...bulkPreview];
+                                                        next[pIdx].results[rIdx].team_id = e.target.value;
+                                                        setBulkPreview(next);
+                                                    }}
+                                                >
+                                                    <option value="">-- Select Unit --</option>
+                                                    {units.map(u => <option key={u.id} value={u.id.toString()}>{u.unit_name}</option>)}
+                                                </select>
+                                                <input 
+                                                    type="text"
+                                                    placeholder="Participant names"
+                                                    className="flex-[1.5] bg-black/40 border border-white/10 rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-gold"
+                                                    value={res.participant_names}
+                                                    onChange={(e) => {
+                                                        const next = [...bulkPreview];
+                                                        next[pIdx].results[rIdx].participant_names = e.target.value;
+                                                        setBulkPreview(next);
+                                                    }}
+                                                />
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            ) : (
+                <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
                         <label className="text-sm font-semibold text-gray-400">Filter By Category</label>
@@ -842,6 +983,7 @@ export default function ResultsManager({ showToast }: { showToast: (msg: string,
                     </button>
                 )}
             </form>
+            )}
 
             {/* List of Published Results */}
             <div className="mt-16 space-y-6">
