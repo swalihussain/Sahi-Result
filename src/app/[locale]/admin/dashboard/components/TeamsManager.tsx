@@ -6,11 +6,19 @@ import { Users, Building2, ListFilter, ChevronDown } from "lucide-react";
 
 export default function TeamsManager({ showToast }: { showToast: (msg: string, type: 'success' | 'error') => void }) {
     const [loading, setLoading] = useState(false);
+    const [units, setUnits] = useState<any[]>([]);
     const [formData, setFormData] = useState({
         name: "",
         category: "General",
         institution: "",
     });
+
+    useEffect(() => {
+        fetch("/api/units")
+            .then(res => res.json())
+            .then(data => setUnits(Array.isArray(data) ? data : []))
+            .catch(err => console.error("Fetch units error:", err));
+    }, []);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -99,17 +107,9 @@ export default function TeamsManager({ showToast }: { showToast: (msg: string, t
                             onChange={(e) => setFormData({ ...formData, institution: e.target.value })}
                         >
                             <option value="" disabled>-- Select Unit --</option>
-                            <option value="CHAPPARAPADAVU">CHAPPARAPADAVU</option>
-                            <option value="ERUVATTY">ERUVATTY</option>
-                            <option value="MADAMTHATTU">MADAMTHATTU</option>
-                            <option value="MANGARA">MANGARA</option>
-                            <option value="MANGARA BN">MANGARA BN</option>
-                            <option value="PERUMALABAD">PERUMALABAD</option>
-                            <option value="PERUMBADAVU">PERUMBADAVU</option>
-                            <option value="PERUVANA EAST">PERUVANA EAST</option>
-                            <option value="PERUVANA WEST">PERUVANA WEST</option>
-                            <option value="SHANTHIGIRI">SHANTHIGIRI</option>
-                            <option value="THENNAM">THENNAM</option>
+                            {units.map(u => (
+                                <option key={u.id} value={u.unit_name}>{u.unit_name}</option>
+                            ))}
                         </select>
                         <ChevronDown size={16} className="absolute inset-y-0 right-4 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" />
                     </div>

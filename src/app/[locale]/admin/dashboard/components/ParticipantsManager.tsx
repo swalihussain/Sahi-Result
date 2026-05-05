@@ -22,6 +22,7 @@ interface Competition {
 export default function ParticipantsManager({ showToast }: { showToast: (msg: string, type: 'success' | 'error') => void }) {
     const [participants, setParticipants] = useState<Participant[]>([]);
     const [competitions, setCompetitions] = useState<Competition[]>([]);
+    const [units, setUnits] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
     const [editingId, setEditingId] = useState<string | null>(null);
 
@@ -46,7 +47,18 @@ export default function ParticipantsManager({ showToast }: { showToast: (msg: st
     useEffect(() => {
         fetchParticipants();
         fetchCompetitions();
+        fetchUnits();
     }, []);
+
+    const fetchUnits = async () => {
+        try {
+            const res = await fetch('/api/units');
+            const data = await res.json();
+            setUnits(Array.isArray(data) ? data : []);
+        } catch (error) {
+            console.error('Fetch units error:', error);
+        }
+    };
 
     const fetchParticipants = async () => {
         try {
@@ -182,14 +194,17 @@ export default function ParticipantsManager({ showToast }: { showToast: (msg: st
 
                     <div className="space-y-1">
                         <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest ml-1">Unit Name</label>
-                        <input 
+                        <select 
                             required
-                            type="text"
                             value={formData.unit_name}
                             onChange={(e) => setFormData({...formData, unit_name: e.target.value})}
                             className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-gold/50"
-                            placeholder="School/Unit"
-                        />
+                        >
+                            <option value="">-- Select Unit --</option>
+                            {units.map(u => (
+                                <option key={u.id} value={u.unit_name}>{u.unit_name}</option>
+                            ))}
+                        </select>
                     </div>
 
                     <div className="space-y-1">
