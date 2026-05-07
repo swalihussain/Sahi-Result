@@ -367,8 +367,8 @@ export default function ResultsManager({ showToast }: { showToast: (msg: string,
                 const wsname = wb.SheetNames[0];
                 const ws = wb.Sheets[wsname];
                 
-                // Read as 2D array first to find metadata and headers
-                const rows = XLSX.utils.sheet_to_json(ws, { header: 1 }) as any[][];
+                // Read as 2D array for manual parsing
+                const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: "" }) as any[][];
 
                 if (rows.length === 0) {
                     showToast("Excel file is empty", "error");
@@ -377,89 +377,101 @@ export default function ResultsManager({ showToast }: { showToast: (msg: string,
 
                 setLoading(true);
 
-                // Try to detect Competition and Category from the top rows
+                let headerRowIndex = -1;
                 let detectedCompName = "";
                 let detectedCategory = "";
-                let headerRowIndex = -1;
+                let detectedSerial = "";
 
-                // Scan first 15 rows for metadata
-                for (let i = 0; i < Math.min(rows.length, 15); i++) {
+                // 1. Find Header Row and Title metadata
+                for (let i = 0; i < Math.min(rows.length, 30); i++) {
                     const row = rows[i];
                     if (!row || row.length === 0) continue;
                     
-                    const rowStr = row.map(c => String(c || '')).join(" ").toLowerCase();
-                    
-                    // Look for Competition Name
-                    if (!detectedCompName) {
-                        const compCell = row.find(cell => {
-                            const s = String(cell || '').toLowerCase();
-                            return s.includes("competition") || s.includes("program") || s.includes("item");
-                        });
-                        
-                        if (compCell) {
-                            const s = String(compCell);
-                            detectedCompName = s.includes(":") ? s.split(":")[1].trim() : s.trim();
-                            // If it's just "Competition", look in the next cell
-                            if (detectedCompName.toLowerCase() === "competition" || detectedCompName.toLowerCase() === "program") {
-                                const cellIdx = row.indexOf(compCell);
-                                if (row[cellIdx + 1]) detectedCompName = String(row[cellIdx + 1]).trim();
-                            }
-                        } else if (i < 3 && row.length === 1 && String(row[0]).length > 3) {
-                            // Often the first row is just the title
-                            detectedCompName = String(row[0]).trim();
-                        }
+                    const rowText = row.map(c => String(c || '').trim()).filter(Boolean);
+                    const combined = rowText.join(" ");
+                    const lowerCombined = combined.toLowerCase();
+
+                    // Check for header keywords in this row
+                    const isHeader = row.some(cell => {
+                        const s = String(cell || '').toLowerCase().trim();
+                        return s === "participant" || s === "team" || s === "prize" || s === "ch no";
+                    });
+
+                    if (isHeader && headerRowIndex === -1) {
+                        headerRowIndex = i;
+                        // Now we have the header, the competition name must be above this
+                        continue;
                     }
 
-                    // Look for Category
-                    if (!detectedCategory) {
+                    if (headerRowIndex === -1) {
+                        // Still looking for header, so these rows might be metadata
+                        // Detect Category
                         for (const cat of CATEGORIES) {
-                            if (rowStr.includes(cat.toLowerCase())) {
+                            if (lowerCombined.includes(cat.toLowerCase())) {
                                 detectedCategory = cat;
                                 break;
                             }
                         }
-                    }
 
-                    // Look for Header Row
-                    const isHeader = row.some(cell => {
-                        const s = String(cell || '').toLowerCase();
-                        return s === "participant" || s === "team" || s === "prize" || s === "ch no" || s === "points";
-                    });
-                    
-                    if (isHeader) {
-                        headerRowIndex = i;
-                        break; 
+                        // Detect Competition Name
+                        if (lowerCombined.includes("competition") || lowerCombined.includes("program") || lowerCombined.includes("item")) {
+                             const parts = combined.split(/[:\-]/);
+                             detectedCompName = parts[parts.length - 1].trim();
+                        } else if (rowText.length === 1 && combined.length > 4 && !detectedCompName) {
+                            // standalone row with one long string is likely the title
+                            if (!combined.toLowerCase().includes("sahithyolsav") && !combined.toLowerCase().includes("result")) {
+                                detectedCompName = combined;
+                            }
+                        }
+
+                        // Detect Serial
+                        if (lowerCombined.includes("result no") || lowerCombined.includes("sl no")) {
+                            const match = combined.match(/\d+/);
+                            if (match) detectedSerial = match[0];
+                        }
                     }
                 }
 
-                if (headerRowIndex === -1) headerRowIndex = 0;
+                if (headerRowIndex === -1) {
+                    showToast("Could not detect table header (Participant/Team/Prize). Please ensure columns are named correctly.", "error");
+                    setLoading(false);
+                    return;
+                }
 
-                // Get data from header row onwards
-                const data = XLSX.utils.sheet_to_json(ws, { range: headerRowIndex });
+                // Cleanup detected competition name (remove category if it was inside)
+                if (detectedCompName && detectedCategory) {
+                    detectedCompName = detectedCompName.replace(new RegExp(detectedCategory, 'gi'), "").replace(/[\(\)\-\:]/g, "").trim();
+                }
 
+                // 2. Map Column Indices
+                const headerRow = rows[headerRowIndex];
+                const colMap: any = {};
+                headerRow.forEach((cell, idx) => {
+                    const s = String(cell || '').toLowerCase().trim();
+                    if (s.includes("participant")) colMap.participant = idx;
+                    else if (s === "team" || s === "unit" || s === "branch") colMap.unit = idx;
+                    else if (s === "prize" || s === "position" || s === "rank" || s === "place") colMap.prize = idx;
+                    else if (s.includes("point")) colMap.points = idx;
+                    else if (s === "ch no" || s === "sl no" || s === "serial") colMap.serial = idx;
+                });
+
+                // 3. Process Data Rows
                 const resultsToProcess: any[] = [];
-                const errors: string[] = [];
+                for (let i = headerRowIndex + 1; i < rows.length; i++) {
+                    const row = rows[i];
+                    if (!row || row.length === 0) continue;
 
-                for (let i = 0; i < data.length; i++) {
-                    const row: any = data[i];
-                    
-                    // Mapping based on new requirements and common formats
-                    const compName = row['Competition Name'] || row['Program'] || row['Item'] || detectedCompName;
-                    const category = row['Category'] || row['CL'] || detectedCategory;
-                    const participantName = row['Participant Name'] || row['Participant'] || row['Participant_Name'];
-                    const unitName = row['Unit'] || row['Team'] || row['Unit_Name'] || row['Branch'];
-                    const prize = row['Prize'] || row['Position'] || row['Place'] || row['Rank'];
-                    const points = row['Point'] || row['Points'] || row['Points Awarded'];
-                    const resultNumber = row['Result Number'] || row['Result_No'] || row['Serial No'] || row['CH No'];
+                    const participantName = row[colMap.participant];
+                    const unitName = row[colMap.unit];
+                    const prizeValue = row[colMap.prize];
+                    const pointsValue = row[colMap.points];
+                    const serialValue = row[colMap.serial];
 
-                    if (!compName || !category || !prize || !unitName) {
-                        if (!unitName && !participantName) continue; // Skip empty rows
-                        continue; // Skip incomplete rows
-                    }
+                    if (!unitName && !participantName) continue;
 
-                    // Normalize Prize to Position (1, 2, 3, 4, 5)
+                    // Normalize Prize to Position
                     let position = "";
-                    const prizeStr = String(prize).toLowerCase().trim();
+                    const prizeStr = String(prizeValue || '').toLowerCase().trim();
                     if (prizeStr.includes("1st") || prizeStr === "1") position = "1";
                     else if (prizeStr.includes("2nd") || prizeStr === "2") position = "2";
                     else if (prizeStr.includes("3rd") || prizeStr === "3") position = "3";
@@ -467,42 +479,39 @@ export default function ResultsManager({ showToast }: { showToast: (msg: string,
                     else if (prizeStr.includes("5th") || prizeStr === "5") position = "5";
 
                     if (!position) {
-                         const num = parseInt(prizeStr);
-                         if (!isNaN(num) && num >= 1 && num <= 5) position = num.toString();
-                         else continue;
+                        const num = parseInt(prizeStr);
+                        if (!isNaN(num) && num >= 1 && num <= 5) position = num.toString();
+                        else continue; // skip non-winner rows
                     }
-
-                    // Find existing competition
-                    const comp = competitions.find(c => 
-                        String(c.name).toLowerCase().trim() === String(compName).toLowerCase().trim() && 
-                        String(c.category).toLowerCase().trim() === String(category).toLowerCase().trim()
-                    );
 
                     // Find Unit
                     const unit = units.find(u => 
-                        String(u.unit_name).toLowerCase().trim() === String(unitName).toLowerCase().trim() ||
-                        String(u.id).toLowerCase().trim() === String(unitName).toLowerCase().trim()
+                        String(u.unit_name).toLowerCase().trim() === String(unitName || '').toLowerCase().trim() ||
+                        String(u.id).toLowerCase().trim() === String(unitName || '').toLowerCase().trim()
                     );
 
-                    if (!unit) {
-                        errors.push(`Row ${i + headerRowIndex + 2}: Unit "${unitName}" not found`);
-                        continue;
-                    }
+                    if (!unit) continue;
+
+                    // Find existing competition
+                    const comp = competitions.find(c => 
+                        String(c.name).toLowerCase().trim() === String(detectedCompName).toLowerCase().trim() && 
+                        String(c.category).toLowerCase().trim() === String(detectedCategory || 'General').toLowerCase().trim()
+                    );
 
                     resultsToProcess.push({
-                        competition_name: compName,
-                        category: category,
+                        competition_name: detectedCompName || "Unknown Competition",
+                        category: detectedCategory || "General",
                         competition_id: comp?.id || null,
                         team_id: unit.id,
                         position: position,
                         participant_names: participantName || "",
-                        points_awarded: points ? String(points) : null,
-                        serial_number: resultNumber ? String(resultNumber) : (comp?.serial_number || "")
+                        points_awarded: pointsValue ? String(pointsValue) : null,
+                        serial_number: detectedSerial || serialValue || (comp?.serial_number || "")
                     });
                 }
 
-                if (errors.length > 0) {
-                    showToast(errors[0], "error");
+                if (resultsToProcess.length === 0) {
+                    showToast("No valid result rows found. Check column names (Participant, Team, Prize).", "error");
                     setLoading(false);
                     return;
                 }
@@ -547,13 +556,7 @@ export default function ResultsManager({ showToast }: { showToast: (msg: string,
                     };
                 });
 
-                // Sort preview array by serial number if available
-                previewArray.sort((a: any, b: any) => {
-                    const numA = parseInt(a.serial_number) || 999;
-                    const numB = parseInt(b.serial_number) || 999;
-                    return numA - numB;
-                });
-
+                previewArray.sort((a: any, b: any) => (parseInt(a.serial_number) || 999) - (parseInt(b.serial_number) || 999));
                 setBulkPreview(previewArray);
                 showToast(`${previewArray.length} competitions parsed. Review and publish.`, "success");
             } catch (error) {
