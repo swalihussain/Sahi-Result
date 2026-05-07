@@ -599,8 +599,14 @@ export default function ResultsManager({ showToast }: { showToast: (msg: string,
                     });
                     
                     if (!createRes.ok) {
-                        const err = await createRes.json();
-                        console.error(`Failed to create competition: ${item.competition_name}`, err);
+                        let errMsg = "Unknown error";
+                        try {
+                            const err = await createRes.json();
+                            errMsg = err.error || err.message || errMsg;
+                        } catch (e) {
+                            errMsg = `Server error (${createRes.status})`;
+                        }
+                        console.error(`Failed to create competition: ${item.competition_name}`, errMsg);
                         failCount++;
                         continue;
                     }
@@ -658,8 +664,14 @@ export default function ResultsManager({ showToast }: { showToast: (msg: string,
                 const resultResponses = await Promise.all(promises);
                 const failedResult = resultResponses.find(r => !r.ok);
                 if (failedResult) {
-                    const err = await failedResult.json();
-                    throw new Error(`Failed to insert results for ${item.competition_name}: ${err.error || err.message || 'Unknown error'}`);
+                    let errorMessage = "Unknown error";
+                    try {
+                        const err = await failedResult.json();
+                        errorMessage = err.error || err.message || errorMessage;
+                    } catch (e) {
+                        errorMessage = `Server error (${failedResult.status})`;
+                    }
+                    throw new Error(`Failed to insert results for ${item.competition_name}: ${errorMessage}`);
                 }
                 
                 successCount++;

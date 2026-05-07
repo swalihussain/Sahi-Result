@@ -28,79 +28,93 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-    const judge = await getJudgeSession();
-    const isAdmin = await isAdminAuthenticated();
-    if (!judge && !isAdmin) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    try {
+        const isAdmin = await isAdminAuthenticated();
+        const judge = await getJudgeSession();
+        
+        if (!judge && !isAdmin) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
 
-    const body = await request.json();
-    
-    // Safety check: if competition_id or team_id/code_letter is missing, skip insertion
-    if (!body.competition_id || (!body.team_id && !body.code_letter)) {
-        return NextResponse.json({ success: true, message: 'Skipped invalid entry' });
-    }
+        let body;
+        try {
+            body = await request.json();
+        } catch (e) {
+            return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
+        }
+        
+        // Safety check: if competition_id or team_id/code_letter is missing, skip insertion
+        if (!body.competition_id || (!body.team_id && !body.code_letter)) {
+            return NextResponse.json({ success: true, message: 'Skipped invalid entry' });
+        }
 
-    // Pick only allowed fields for the results table
-    const { 
-        competition_id, 
-        team_id, 
-        position, 
-        points_awarded, 
-        participant_names, 
-        result_pdf_url,
-        code_letter,
-        judge_id,
-        judge1_marks,
-        judge2_marks,
-        judge3_marks,
-        final_marks,
-        rank,
-        feedback,
-        status
-    } = body;
+        // Pick only allowed fields for the results table
+        const { 
+            competition_id, 
+            team_id, 
+            position, 
+            points_awarded, 
+            participant_names, 
+            result_pdf_url,
+            code_letter,
+            judge_id,
+            judge1_marks,
+            judge2_marks,
+            judge3_marks,
+            final_marks,
+            rank,
+            feedback,
+            status
+        } = body;
 
-    const resultData: any = {
-        competition_id,
-        team_id,
-        position,
-        points_awarded,
-        participant_names,
-        result_pdf_url,
-        judge1_marks,
-        judge2_marks,
-        judge3_marks,
-        final_marks,
-        rank,
-        feedback,
-        status
-    };
+        const resultData: any = {
+            competition_id,
+            team_id,
+            position,
+            points_awarded,
+            participant_names,
+            result_pdf_url,
+            judge1_marks,
+            judge2_marks,
+            judge3_marks,
+            final_marks,
+            rank,
+            feedback,
+            status
+        };
 
-    // If it's a published result (from Admin), it might not have code_letter or judge_id
-    if (isAdmin && !code_letter) {
+        // If it's a published result (from Admin), it might not have code_letter or judge_id
+        if (isAdmin && !code_letter) {
+            const { data, error } = await supabase
+                .from('results')
+                .insert([resultData])
+                .select();
+            if (error) {
+                console.error('Published result insert error:', error, 'Data:', resultData);
+                return NextResponse.json({ error: error.message }, { status: 500 });
+            }
+            return NextResponse.json(data[0] || { success: true });
+        }
+
+        // Standard judging result
+        const judgingData = { ...resultData, code_letter, judge_id };
         const { data, error } = await supabase
             .from('results')
-            .insert([resultData])
+            .upsert(judgingData, { onConflict: 'competition_id,code_letter,judge_id' })
             .select();
+
         if (error) {
-            console.error('Published result insert error:', error);
+            console.error('Judging result upsert error:', error, 'Data:', judgingData);
             return NextResponse.json({ error: error.message }, { status: 500 });
         }
         return NextResponse.json(data[0] || { success: true });
+    } catch (error: any) {
+        console.error('Critical Results API Error:', error);
+        return NextResponse.json({ 
+            success: false, 
+            error: error.message || 'Internal Server Error' 
+        }, { status: 500 });
     }
-
-    // Standard judging result
-    const judgingData = { ...resultData, code_letter, judge_id };
-    const { data, error } = await supabase
-        .from('results')
-        .upsert(judgingData, { onConflict: 'competition_id,code_letter,judge_id' })
-        .select();
-
-    if (error) {
-        console.error('Judging result upsert error:', error);
-        return NextResponse.json({ error: error.message }, { status: 500 });
-    }
-    return NextResponse.json(data[0] || { success: true });
 }
 
 export async function DELETE(request: Request) {
