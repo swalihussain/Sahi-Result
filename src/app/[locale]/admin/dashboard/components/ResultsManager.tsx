@@ -775,12 +775,71 @@ export default function ResultsManager({ showToast }: { showToast: (msg: string,
                     <div className="grid grid-cols-1 gap-6">
                         {bulkPreview.map((item, pIdx) => (
                             <div key={pIdx} className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden">
-                                <div className="p-5 bg-white/5 border-b border-white/10 flex items-center justify-between">
-                                    <div className="flex items-center gap-3">
-                                        <div className="px-3 py-1 bg-gold/10 border border-gold/30 text-gold rounded-lg text-xs font-black uppercase tracking-widest">
-                                            {item.category}
+                                <div className="p-5 bg-white/5 border-b border-white/10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+                                    <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div className="space-y-1">
+                                            <label className="text-[10px] font-black text-gold/50 uppercase tracking-widest">Category</label>
+                                            <select
+                                                className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white outline-none focus:border-gold transition-all"
+                                                value={item.category}
+                                                onChange={(e) => {
+                                                    const next = [...bulkPreview];
+                                                    next[pIdx].category = e.target.value;
+                                                    setBulkPreview(next);
+                                                }}
+                                            >
+                                                {CATEGORIES.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+                                            </select>
                                         </div>
-                                        <h4 className="text-lg font-bold text-white uppercase tracking-tight">{item.competition_name}</h4>
+                                        <div className="space-y-1">
+                                            <label className="text-[10px] font-black text-gold/50 uppercase tracking-widest">Competition Name</label>
+                                            <div className="relative group/comp">
+                                                <input 
+                                                    type="text"
+                                                    value={item.competition_name}
+                                                    onChange={(e) => {
+                                                        const val = e.target.value;
+                                                        const next = [...bulkPreview];
+                                                        next[pIdx].competition_name = val;
+                                                        // Check for exact match to link existing ID
+                                                        const match = competitions.find(c => 
+                                                            c.name.toLowerCase().trim() === val.toLowerCase().trim() && 
+                                                            c.category.toLowerCase().trim() === item.category.toLowerCase().trim()
+                                                        );
+                                                        next[pIdx].competition_id = match ? match.id : null;
+                                                        setBulkPreview(next);
+                                                    }}
+                                                    className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white outline-none focus:border-gold transition-all"
+                                                    placeholder="Type competition name..."
+                                                />
+                                                <div className="absolute top-full left-0 right-0 bg-[#1a1a1a] border border-white/10 rounded-xl mt-1 z-20 hidden group-focus-within/comp:block max-h-48 overflow-y-auto shadow-2xl p-1 backdrop-blur-xl">
+                                                    <div className="px-3 py-2 text-[10px] font-black text-gray-500 uppercase tracking-widest border-b border-white/5 mb-1">Existing Programs</div>
+                                                    {competitions
+                                                        .filter(c => c.category === item.category)
+                                                        .filter(c => c.name.toLowerCase().includes(item.competition_name.toLowerCase()) || item.competition_name === "")
+                                                        .map(c => (
+                                                            <div 
+                                                                key={c.id} 
+                                                                onMouseDown={(e) => {
+                                                                    e.preventDefault();
+                                                                    const next = [...bulkPreview];
+                                                                    next[pIdx].competition_name = c.name;
+                                                                    next[pIdx].competition_id = c.id;
+                                                                    setBulkPreview(next);
+                                                                }}
+                                                                className="px-3 py-2 text-xs text-gray-300 hover:bg-gold/10 hover:text-gold rounded-lg cursor-pointer transition-colors flex items-center justify-between"
+                                                            >
+                                                                <span>{c.name}</span>
+                                                                {item.competition_id === c.id && <Check size={12} className="text-gold" />}
+                                                            </div>
+                                                        ))
+                                                    }
+                                                    {competitions.filter(c => c.category === item.category).length === 0 && (
+                                                        <div className="px-3 py-4 text-center text-[10px] text-gray-500 italic">No existing programs in this category</div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
                                     <div className="flex items-center gap-4">
                                         <div className="flex items-center gap-2">
