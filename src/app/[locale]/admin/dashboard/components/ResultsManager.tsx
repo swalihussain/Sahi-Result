@@ -572,12 +572,18 @@ export default function ResultsManager({ showToast }: { showToast: (msg: string,
 
     const handleBulkPublish = async () => {
         setLoading(true);
+        console.log("Starting bulk publish for", bulkPreview.length, "competitions");
+        let successCount = 0;
+        let failCount = 0;
+
         try {
             for (const item of bulkPreview) {
                 let compId = item.competition_id;
+                console.log(`Processing competition: ${item.competition_name} (${item.category})`);
                 
                 // 1. Create competition if it doesn't exist
                 if (!compId) {
+                    console.log(`Competition not found. Creating new: ${item.competition_name}`);
                     const today = new Date().toISOString().split('T')[0];
                     const createRes = await fetch("/api/competitions", {
                         method: "POST",
@@ -587,21 +593,26 @@ export default function ResultsManager({ showToast }: { showToast: (msg: string,
                             date: today,
                             category: item.category,
                             competition_type: item.competition_name.toLowerCase().includes("group") ? "Group" : "Individual",
-                            results_only: 1,
+                            results_only: true,
                             serial_number: item.serial_number
                         })
                     });
-                    if (createRes.ok) {
-                        const newComp = await createRes.json();
-                        compId = newComp.id;
-                    } else {
-                        console.error(`Failed to create competition: ${item.competition_name}`);
+                    
+                    if (!createRes.ok) {
+                        const err = await createRes.json();
+                        console.error(`Failed to create competition: ${item.competition_name}`, err);
+                        failCount++;
                         continue;
                     }
+                    
+                    const newComp = await createRes.json();
+                    compId = newComp.id;
+                    console.log(`Created competition with ID: ${compId}`);
                 } else {
                     // Update existing competition serial number
                     const comp = competitions.find(c => c.id.toString() === compId.toString());
                     if (comp && item.serial_number !== comp.serial_number) {
+                        console.log(`Updating serial number for competition ID ${compId} to ${item.serial_number}`);
                          await fetch(`/api/competitions/${compId}`, {
                             method: "PUT",
                             headers: { "Content-Type": "application/json" },
@@ -610,45 +621,65 @@ export default function ResultsManager({ showToast }: { showToast: (msg: string,
                     }
                 }
 
-                // 2. Delete existing results for this competition
+                // 2. Delete existing results for this competition to prevent duplicates
+                console.log(`Cleaning up old results for competition ID: ${compId}`);
                 await fetch(`/api/results?competition_id=${compId}`, { method: "DELETE" });
 
                 // 3. Post new results
-                const promises = item.results
-                    .filter((res: any) => res.team_id && res.team_id.trim() !== "")
-                    .map((res: any) => {
-                        const isGroupEvent = item.category?.toUpperCase() === 'GENERAL' || 
-                                           item.competition_name?.toUpperCase().includes('GROUP');
-                        
-                        let points = res.points_awarded;
-                        if (!points) {
-                            if (isGroupEvent) {
-                                points = res.position === '1' ? '15' : res.position === '2' ? '10' : res.position === '3' ? '5' : '0';
-                            } else {
-                                points = res.position === '1' ? '10' : res.position === '2' ? '5' : res.position === '3' ? '2' : '0';
-                            }
+                const validResults = item.results.filter((res: any) => res.team_id && res.team_id.trim() !== "");
+                console.log(`Inserting ${validResults.length} result rows for competition ID: ${compId}`);
+                
+                const promises = validResults.map((res: any) => {
+                    const isGroupEvent = item.category?.toUpperCase() === 'GENERAL' || 
+                                       item.competition_name?.toUpperCase().includes('GROUP');
+                    
+                    let points = res.points_awarded;
+                    if (!points) {
+                        if (isGroupEvent) {
+                            points = res.position === '1' ? '15' : res.position === '2' ? '10' : res.position === '3' ? '5' : '0';
+                        } else {
+                            points = res.position === '1' ? '10' : res.position === '2' ? '5' : res.position === '3' ? '2' : '0';
                         }
+                    }
 
-                        return fetch("/api/results", {
-                            method: "POST",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({
-                                competition_id: compId,
-                                team_id: res.team_id,
-                                position: res.position,
-                                points_awarded: points,
-                                participant_names: res.participant_names,
-                            }),
-                        });
+                    return fetch("/api/results", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            competition_id: compId,
+                            team_id: res.team_id,
+                            position: res.position,
+                            points_awarded: points,
+                            participant_names: res.participant_names,
+                        }),
                     });
-                await Promise.all(promises);
+                });
+                
+                const resultResponses = await Promise.all(promises);
+                const failedResult = resultResponses.find(r => !r.ok);
+                if (failedResult) {
+                    const err = await failedResult.json();
+                    throw new Error(`Failed to insert results for ${item.competition_name}: ${err.error || err.message || 'Unknown error'}`);
+                }
+                
+                successCount++;
+                console.log(`Successfully published: ${item.competition_name}`);
             }
-            showToast("All results published successfully!", "success");
-            setBulkPreview([]);
-            fetchInitialData();
-        } catch (error) {
+
+            if (failCount > 0 && successCount === 0) {
+                showToast(`Failed to publish all ${failCount} competitions. Check console.`, "error");
+            } else if (failCount > 0) {
+                showToast(`Published ${successCount} competitions, but ${failCount} failed.`, "error");
+                setBulkPreview([]);
+                await fetchInitialData();
+            } else {
+                showToast(`Successfully published all ${successCount} competitions!`, "success");
+                setBulkPreview([]);
+                await fetchInitialData();
+            }
+        } catch (error: any) {
             console.error("Bulk publish error:", error);
-            showToast("Failed to publish some results", "error");
+            showToast(error.message || "Failed to publish results. Database error.", "error");
         } finally {
             setLoading(false);
         }
