@@ -16,6 +16,9 @@ export async function GET(request: Request) {
                 name,
                 category,
                 serial_number
+            ),
+            units (
+                unit_name
             )
         `);
     if (competition_id) {
