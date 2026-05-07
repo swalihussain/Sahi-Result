@@ -31,7 +31,11 @@ export default function ResultsManager({ showToast }: { showToast: (msg: string,
     });
     const [savingSettings, setSavingSettings] = useState(false);
 
-    const [formData, setFormData] = useState({
+    const [formData, setFormData] = useState<{
+        competition_id: string;
+        serial_number: string;
+        results: ResultItem[];
+    }>({
         competition_id: "",
         serial_number: "",
         results: [
