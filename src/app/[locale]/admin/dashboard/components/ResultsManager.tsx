@@ -20,6 +20,7 @@ export default function ResultsManager({ showToast }: { showToast: (msg: string,
         position: string;
         team_id: string;
         participant_names: string;
+        points_awarded?: string;
     }
     
     const [existingFileUrls, setExistingFileUrls] = useState<string[]>([]);
@@ -37,7 +38,8 @@ export default function ResultsManager({ showToast }: { showToast: (msg: string,
             { position: "1", team_id: "", participant_names: "" },
             { position: "2", team_id: "", participant_names: "" },
             { position: "3", team_id: "", participant_names: "" },
-            { position: "4", team_id: "", participant_names: "" }
+            { position: "4", team_id: "", participant_names: "" },
+            { position: "5", team_id: "", participant_names: "" }
         ]
     });
 
@@ -190,11 +192,13 @@ export default function ResultsManager({ showToast }: { showToast: (msg: string,
                     const isGroupEvent = selectedComp?.category?.toUpperCase() === 'GENERAL' || 
                                        selectedComp?.name?.toUpperCase().includes('GROUP');
                     
-                    let points = "0";
-                    if (isGroupEvent) {
-                        points = res.position === '1' ? '15' : res.position === '2' ? '10' : res.position === '3' ? '5' : '0';
-                    } else {
-                        points = res.position === '1' ? '10' : res.position === '2' ? '5' : res.position === '3' ? '2' : '0';
+                    let points = res.points_awarded;
+                    if (!points) {
+                        if (isGroupEvent) {
+                            points = res.position === '1' ? '15' : res.position === '2' ? '10' : res.position === '3' ? '5' : '0';
+                        } else {
+                            points = res.position === '1' ? '10' : res.position === '2' ? '5' : res.position === '3' ? '2' : '0';
+                        }
                     }
 
                     return fetch("/api/results", {
@@ -223,7 +227,8 @@ export default function ResultsManager({ showToast }: { showToast: (msg: string,
                         { position: "1", team_id: "", participant_names: "" },
                         { position: "2", team_id: "", participant_names: "" },
                         { position: "3", team_id: "" , participant_names: ""},
-                        { position: "4", team_id: "" , participant_names: ""}
+                        { position: "4", team_id: "" , participant_names: ""},
+                        { position: "5", team_id: "" , participant_names: ""}
                     ]
                 });
                 
@@ -357,116 +362,202 @@ export default function ResultsManager({ showToast }: { showToast: (msg: string,
                 const wb = XLSX.read(bstr, { type: 'binary' });
                 const wsname = wb.SheetNames[0];
                 const ws = wb.Sheets[wsname];
-                const data = XLSX.utils.sheet_to_json(ws);
+                
+                // Read as 2D array first to find metadata and headers
+                const rows = XLSX.utils.sheet_to_json(ws, { header: 1 }) as any[][];
 
-                if (data.length === 0) {
+                if (rows.length === 0) {
                     showToast("Excel file is empty", "error");
                     return;
                 }
 
                 setLoading(true);
+
+                // Try to detect Competition and Category from the top rows
+                let detectedCompName = "";
+                let detectedCategory = "";
+                let headerRowIndex = -1;
+
+                // Scan first 15 rows for metadata
+                for (let i = 0; i < Math.min(rows.length, 15); i++) {
+                    const row = rows[i];
+                    if (!row || row.length === 0) continue;
+                    
+                    const rowStr = row.map(c => String(c || '')).join(" ").toLowerCase();
+                    
+                    // Look for Competition Name
+                    if (!detectedCompName) {
+                        const compCell = row.find(cell => {
+                            const s = String(cell || '').toLowerCase();
+                            return s.includes("competition") || s.includes("program") || s.includes("item");
+                        });
+                        
+                        if (compCell) {
+                            const s = String(compCell);
+                            detectedCompName = s.includes(":") ? s.split(":")[1].trim() : s.trim();
+                            // If it's just "Competition", look in the next cell
+                            if (detectedCompName.toLowerCase() === "competition" || detectedCompName.toLowerCase() === "program") {
+                                const cellIdx = row.indexOf(compCell);
+                                if (row[cellIdx + 1]) detectedCompName = String(row[cellIdx + 1]).trim();
+                            }
+                        } else if (i < 3 && row.length === 1 && String(row[0]).length > 3) {
+                            // Often the first row is just the title
+                            detectedCompName = String(row[0]).trim();
+                        }
+                    }
+
+                    // Look for Category
+                    if (!detectedCategory) {
+                        for (const cat of CATEGORIES) {
+                            if (rowStr.includes(cat.toLowerCase())) {
+                                detectedCategory = cat;
+                                break;
+                            }
+                        }
+                    }
+
+                    // Look for Header Row
+                    const isHeader = row.some(cell => {
+                        const s = String(cell || '').toLowerCase();
+                        return s === "participant" || s === "team" || s === "prize" || s === "ch no" || s === "points";
+                    });
+                    
+                    if (isHeader) {
+                        headerRowIndex = i;
+                        break; 
+                    }
+                }
+
+                if (headerRowIndex === -1) headerRowIndex = 0;
+
+                // Get data from header row onwards
+                const data = XLSX.utils.sheet_to_json(ws, { range: headerRowIndex });
+
                 const resultsToProcess: any[] = [];
                 const errors: string[] = [];
 
                 for (let i = 0; i < data.length; i++) {
                     const row: any = data[i];
-                    const compName = row['Competition Name'];
-                    const category = row['Category'];
-                    const position = row['Position'];
-                    const unitName = row['Unit'];
-                    const participantNames = row['Participant Name'];
-                    const resultNumber = row['Result Number'];
+                    
+                    // Mapping based on new requirements and common formats
+                    const compName = row['Competition Name'] || row['Program'] || row['Item'] || detectedCompName;
+                    const category = row['Category'] || row['CL'] || detectedCategory;
+                    const participantName = row['Participant Name'] || row['Participant'] || row['Participant_Name'];
+                    const unitName = row['Unit'] || row['Team'] || row['Unit_Name'] || row['Branch'];
+                    const prize = row['Prize'] || row['Position'] || row['Place'] || row['Rank'];
+                    const points = row['Point'] || row['Points'] || row['Points Awarded'];
+                    const resultNumber = row['Result Number'] || row['Result_No'] || row['Serial No'] || row['CH No'];
 
-                    if (!compName || !category || !position || !unitName) {
-                        errors.push(`Row ${i + 2}: Missing required fields (Competition Name, Category, Position, Unit)`);
-                        continue;
+                    if (!compName || !category || !prize || !unitName) {
+                        if (!unitName && !participantName) continue; // Skip empty rows
+                        continue; // Skip incomplete rows
                     }
 
+                    // Normalize Prize to Position (1, 2, 3, 4, 5)
+                    let position = "";
+                    const prizeStr = String(prize).toLowerCase().trim();
+                    if (prizeStr.includes("1st") || prizeStr === "1") position = "1";
+                    else if (prizeStr.includes("2nd") || prizeStr === "2") position = "2";
+                    else if (prizeStr.includes("3rd") || prizeStr === "3") position = "3";
+                    else if (prizeStr.includes("4th") || prizeStr === "4") position = "4";
+                    else if (prizeStr.includes("5th") || prizeStr === "5") position = "5";
+
+                    if (!position) {
+                         const num = parseInt(prizeStr);
+                         if (!isNaN(num) && num >= 1 && num <= 5) position = num.toString();
+                         else continue;
+                    }
+
+                    // Find existing competition
                     const comp = competitions.find(c => 
                         String(c.name).toLowerCase().trim() === String(compName).toLowerCase().trim() && 
                         String(c.category).toLowerCase().trim() === String(category).toLowerCase().trim()
                     );
 
-                    if (!comp) {
-                        errors.push(`Row ${i + 2}: Competition "${compName}" in category "${category}" not found`);
-                        continue;
-                    }
+                    // Find Unit
+                    const unit = units.find(u => 
+                        String(u.unit_name).toLowerCase().trim() === String(unitName).toLowerCase().trim() ||
+                        String(u.id).toLowerCase().trim() === String(unitName).toLowerCase().trim()
+                    );
 
-                    const unit = units.find(u => String(u.unit_name).toLowerCase().trim() === String(unitName).toLowerCase().trim());
                     if (!unit) {
-                        errors.push(`Row ${i + 2}: Unit "${unitName}" not found`);
-                        continue;
-                    }
-
-                    const posStr = String(position);
-                    if (!['1', '2', '3', '4'].includes(posStr)) {
-                        errors.push(`Row ${i + 2}: Invalid position "${position}". Must be 1, 2, 3, or 4.`);
+                        errors.push(`Row ${i + headerRowIndex + 2}: Unit "${unitName}" not found`);
                         continue;
                     }
 
                     resultsToProcess.push({
-                        competition_id: comp.id,
+                        competition_name: compName,
+                        category: category,
+                        competition_id: comp?.id || null,
                         team_id: unit.id,
-                        position: posStr,
-                        participant_names: participantNames || "",
-                        serial_number: resultNumber ? resultNumber.toString() : comp.serial_number,
-                        compObj: comp
+                        position: position,
+                        participant_names: participantName || "",
+                        points_awarded: points ? String(points) : null,
+                        serial_number: resultNumber ? String(resultNumber) : (comp?.serial_number || "")
                     });
                 }
 
                 if (errors.length > 0) {
-                    showToast(errors[0], "error"); // Show first error
+                    showToast(errors[0], "error");
                     setLoading(false);
                     return;
                 }
 
                 // Group by competition
                 const groupedByComp = resultsToProcess.reduce((acc, curr) => {
-                    if (!acc[curr.competition_id]) {
-                        acc[curr.competition_id] = {
-                            results: [],
+                    const key = `${curr.competition_name}-${curr.category}`;
+                    if (!acc[key]) {
+                        acc[key] = {
+                            competition_id: curr.competition_id,
+                            competition_name: curr.competition_name,
+                            category: curr.category,
                             serial_number: curr.serial_number,
-                            compObj: curr.compObj
+                            results: []
                         };
                     }
-                    acc[curr.competition_id].results.push(curr);
+                    acc[key].results.push(curr);
                     return acc;
                 }, {} as any);
 
-                const previewArray = Object.keys(groupedByComp).map(compId => {
-                    const group = groupedByComp[compId];
-                    const winners = group.results;
+                const previewArray = Object.values(groupedByComp).map((group: any) => {
                     const finalResults = [
-                        { position: "1", team_id: "", participant_names: "" },
-                        { position: "2", team_id: "", participant_names: "" },
-                        { position: "3", team_id: "", participant_names: "" },
-                        { position: "4", team_id: "", participant_names: "" }
+                        { position: "1", team_id: "", participant_names: "", points_awarded: "" },
+                        { position: "2", team_id: "", participant_names: "", points_awarded: "" },
+                        { position: "3", team_id: "", participant_names: "", points_awarded: "" },
+                        { position: "4", team_id: "", participant_names: "", points_awarded: "" },
+                        { position: "5", team_id: "", participant_names: "", points_awarded: "" }
                     ];
-                    winners.forEach((w: any) => {
+                    
+                    group.results.forEach((w: any) => {
                         const idx = parseInt(w.position) - 1;
-                        if (idx >= 0 && idx < 4) {
+                        if (idx >= 0 && idx < 5) {
                             finalResults[idx].team_id = w.team_id.toString();
                             finalResults[idx].participant_names = w.participant_names;
+                            finalResults[idx].points_awarded = w.points_awarded || "";
                         }
                     });
 
                     return {
-                        competition_id: compId,
-                        competition_name: group.compObj.name,
-                        category: group.compObj.category,
-                        serial_number: group.serial_number,
+                        ...group,
                         results: finalResults
                     };
                 });
 
+                // Sort preview array by serial number if available
+                previewArray.sort((a: any, b: any) => {
+                    const numA = parseInt(a.serial_number) || 999;
+                    const numB = parseInt(b.serial_number) || 999;
+                    return numA - numB;
+                });
+
                 setBulkPreview(previewArray);
-                showToast(`${previewArray.length} competitions found in Excel. Review and publish below.`, "success");
+                showToast(`${previewArray.length} competitions parsed. Review and publish.`, "success");
             } catch (error) {
                 console.error("Excel processing error:", error);
                 showToast("Failed to process Excel file", "error");
             } finally {
                 setLoading(false);
-                if (e.target) e.target.value = ""; // Reset input
+                if (e.target) e.target.value = "";
             }
         };
         reader.readAsBinaryString(file);
@@ -476,38 +567,66 @@ export default function ResultsManager({ showToast }: { showToast: (msg: string,
         setLoading(true);
         try {
             for (const item of bulkPreview) {
-                // Delete existing
-                await fetch(`/api/results?competition_id=${item.competition_id}`, { method: "DELETE" });
-
-                // Update competition serial
-                const comp = competitions.find(c => c.id.toString() === item.competition_id.toString());
-                if (comp && item.serial_number !== comp.serial_number) {
-                     await fetch(`/api/competitions/${item.competition_id}`, {
-                        method: "PUT",
+                let compId = item.competition_id;
+                
+                // 1. Create competition if it doesn't exist
+                if (!compId) {
+                    const today = new Date().toISOString().split('T')[0];
+                    const createRes = await fetch("/api/competitions", {
+                        method: "POST",
                         headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ ...comp, serial_number: item.serial_number })
+                        body: JSON.stringify({
+                            name: item.competition_name,
+                            date: today,
+                            category: item.category,
+                            competition_type: item.competition_name.toLowerCase().includes("group") ? "Group" : "Individual",
+                            results_only: 1,
+                            serial_number: item.serial_number
+                        })
                     });
+                    if (createRes.ok) {
+                        const newComp = await createRes.json();
+                        compId = newComp.id;
+                    } else {
+                        console.error(`Failed to create competition: ${item.competition_name}`);
+                        continue;
+                    }
+                } else {
+                    // Update existing competition serial number
+                    const comp = competitions.find(c => c.id.toString() === compId.toString());
+                    if (comp && item.serial_number !== comp.serial_number) {
+                         await fetch(`/api/competitions/${compId}`, {
+                            method: "PUT",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ ...comp, serial_number: item.serial_number })
+                        });
+                    }
                 }
 
-                // Post results
+                // 2. Delete existing results for this competition
+                await fetch(`/api/results?competition_id=${compId}`, { method: "DELETE" });
+
+                // 3. Post new results
                 const promises = item.results
                     .filter((res: any) => res.team_id && res.team_id.trim() !== "")
                     .map((res: any) => {
                         const isGroupEvent = item.category?.toUpperCase() === 'GENERAL' || 
                                            item.competition_name?.toUpperCase().includes('GROUP');
                         
-                        let points = "0";
-                        if (isGroupEvent) {
-                            points = res.position === '1' ? '15' : res.position === '2' ? '10' : res.position === '3' ? '5' : '0';
-                        } else {
-                            points = res.position === '1' ? '10' : res.position === '2' ? '5' : res.position === '3' ? '2' : '0';
+                        let points = res.points_awarded;
+                        if (!points) {
+                            if (isGroupEvent) {
+                                points = res.position === '1' ? '15' : res.position === '2' ? '10' : res.position === '3' ? '5' : '0';
+                            } else {
+                                points = res.position === '1' ? '10' : res.position === '2' ? '5' : res.position === '3' ? '2' : '0';
+                            }
                         }
 
                         return fetch("/api/results", {
                             method: "POST",
                             headers: { "Content-Type": "application/json" },
                             body: JSON.stringify({
-                                competition_id: item.competition_id,
+                                competition_id: compId,
                                 team_id: res.team_id,
                                 position: res.position,
                                 points_awarded: points,
@@ -682,11 +801,11 @@ export default function ResultsManager({ showToast }: { showToast: (msg: string,
                                     {item.results.map((res: any, rIdx: number) => (
                                         <div key={rIdx} className="space-y-3">
                                             <div className="flex items-center gap-2">
-                                                <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black ${rIdx === 0 ? 'bg-gold text-black' : rIdx === 1 ? 'bg-gray-400 text-black' : rIdx === 2 ? 'bg-orange-400 text-black' : 'bg-blue-400 text-black'}`}>
+                                                <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black ${rIdx === 0 ? 'bg-gold text-black' : rIdx === 1 ? 'bg-gray-400 text-black' : rIdx === 2 ? 'bg-orange-400 text-black' : rIdx === 3 ? 'bg-blue-400 text-black' : 'bg-purple-400 text-black'}`}>
                                                     {rIdx + 1}
                                                 </div>
                                                 <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">
-                                                    {rIdx === 0 ? '1st' : rIdx === 1 ? '2nd' : rIdx === 2 ? '3rd' : '4th'} Place
+                                                    {rIdx === 0 ? '1st' : rIdx === 1 ? '2nd' : rIdx === 2 ? '3rd' : rIdx === 3 ? '4th' : '5th'} Place
                                                 </span>
                                             </div>
                                             <div className="flex gap-2">
@@ -702,17 +821,31 @@ export default function ResultsManager({ showToast }: { showToast: (msg: string,
                                                     <option value="">-- Select Unit --</option>
                                                     {units.map(u => <option key={u.id} value={u.id.toString()}>{u.unit_name}</option>)}
                                                 </select>
-                                                <input 
-                                                    type="text"
-                                                    placeholder="Participant names"
-                                                    className="flex-[1.5] bg-black/40 border border-white/10 rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-gold"
-                                                    value={res.participant_names}
-                                                    onChange={(e) => {
-                                                        const next = [...bulkPreview];
-                                                        next[pIdx].results[rIdx].participant_names = e.target.value;
-                                                        setBulkPreview(next);
-                                                    }}
-                                                />
+                                                <div className="flex-[1.5] flex gap-2">
+                                                    <input 
+                                                        type="text"
+                                                        placeholder="Participant names"
+                                                        className="flex-1 bg-black/40 border border-white/10 rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-gold"
+                                                        value={res.participant_names}
+                                                        onChange={(e) => {
+                                                            const next = [...bulkPreview];
+                                                            next[pIdx].results[rIdx].participant_names = e.target.value;
+                                                            setBulkPreview(next);
+                                                        }}
+                                                    />
+                                                    <input 
+                                                        type="text"
+                                                        placeholder="Pts"
+                                                        title="Points"
+                                                        className="w-12 bg-black/40 border border-white/10 rounded-xl px-2 py-2 text-[10px] text-center text-gold outline-none focus:border-gold"
+                                                        value={res.points_awarded || ""}
+                                                        onChange={(e) => {
+                                                            const next = [...bulkPreview];
+                                                            next[pIdx].results[rIdx].points_awarded = e.target.value;
+                                                            setBulkPreview(next);
+                                                        }}
+                                                    />
+                                                </div>
                                             </div>
                                         </div>
                                     ))}
@@ -850,14 +983,14 @@ export default function ResultsManager({ showToast }: { showToast: (msg: string,
                 </div>
 
                 <div className="space-y-8 bg-white/5 p-6 rounded-2xl border border-white/10">
-                    {[0, 1, 2, 3].map((idx) => (
+                    {[0, 1, 2, 3, 4].map((idx) => (
                         <div key={idx} className="space-y-4 pb-6 border-b border-white/5 last:border-0 last:pb-0">
                             <div className="flex items-center gap-3 mb-2">
-                                <div className={`w-8 h-8 rounded-full flex items-center justify-center font-black ${idx === 0 ? 'bg-gold text-black' : idx === 1 ? 'bg-gray-400 text-black' : idx === 2 ? 'bg-orange-400 text-black' : 'bg-blue-400 text-black'}`}>
+                                <div className={`w-8 h-8 rounded-full flex items-center justify-center font-black ${idx === 0 ? 'bg-gold text-black' : idx === 1 ? 'bg-gray-400 text-black' : idx === 2 ? 'bg-orange-400 text-black' : idx === 3 ? 'bg-blue-400 text-black' : 'bg-purple-400 text-black'}`}>
                                     {idx + 1}
                                 </div>
                                 <h4 className="text-white font-bold">
-                                    {idx === 0 ? "1st" : idx === 1 ? "2nd" : idx === 2 ? "3rd" : "4th"} Place
+                                    {idx === 0 ? "1st" : idx === 1 ? "2nd" : idx === 2 ? "3rd" : idx === 3 ? "4th" : "5th"} Place
                                 </h4>
                             </div>
 
@@ -983,7 +1116,8 @@ export default function ResultsManager({ showToast }: { showToast: (msg: string,
                                     { position: "1", team_id: "", participant_names: "" },
                                     { position: "2", team_id: "", participant_names: "" },
                                     { position: "3", team_id: "", participant_names: "" },
-                                    { position: "4", team_id: "", participant_names: "" }
+                                    { position: "4", team_id: "", participant_names: "" },
+                                    { position: "5", team_id: "", participant_names: "" }
                                 ]
                             });
                         }}
@@ -1037,11 +1171,12 @@ export default function ResultsManager({ showToast }: { showToast: (msg: string,
                                                 { position: "1", team_id: "", participant_names: "" },
                                                 { position: "2", team_id: "", participant_names: "" },
                                                 { position: "3", team_id: "", participant_names: "" },
-                                                { position: "4", team_id: "", participant_names: "" }
+                                                { position: "4", team_id: "", participant_names: "" },
+                                                { position: "5", team_id: "", participant_names: "" }
                                             ];
                                             res.winners.forEach((w: any) => {
                                                 const idx = parseInt(w.position) - 1;
-                                                if (idx >= 0 && idx < 4) {
+                                                if (idx >= 0 && idx < 5) {
                                                     newResults[idx].team_id = w.team_id?.toString() || "";
                                                     newResults[idx].participant_names = w.participant_names || "";
                                                 }
