@@ -35,8 +35,11 @@ export default function AdminDashboard() {
     const handleLogout = async () => {
         setIsLoggingOut(true);
         try {
-            await fetch('/api/auth', { method: 'DELETE' });
+            const { createClient } = await import('@/lib/supabase/client');
+            const supabase = createClient();
+            await supabase.auth.signOut();
             router.push('/en/admin');
+            router.refresh();
         } catch {
             showToast('Logout failed', 'error');
             setIsLoggingOut(false);

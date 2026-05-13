@@ -3,14 +3,17 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import * as motion from 'framer-motion/client';
-import { Lock, User } from 'lucide-react';
+import { Lock, User, Mail } from 'lucide-react';
 import { Link } from '@/i18n/routing';
+import { createClient } from '@/lib/supabase/client';
 
 export default function AdminLogin() {
+    const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
     const router = useRouter();
+    const supabase = createClient();
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -18,17 +21,16 @@ export default function AdminLogin() {
         setLoading(true);
 
         try {
-            const res = await fetch('/api/auth', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ password }),
+            const { error: authError } = await supabase.auth.signInWithPassword({
+                email,
+                password,
             });
 
-            if (res.ok) {
-                router.push('/en/admin/dashboard');
+            if (authError) {
+                setError(authError.message);
             } else {
-                const data = await res.json();
-                setError(data.message || 'Invalid password');
+                router.push('/en/admin/dashboard');
+                router.refresh();
             }
         } catch (err) {
             setError('An error occurred. Please try again.');
@@ -69,14 +71,16 @@ export default function AdminLogin() {
 
                     <form onSubmit={handleLogin} className="flex flex-col gap-5">
                         <div className="relative">
-                            <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none text-gray-500">
-                                <User size={18} />
+                            <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none text-gray-400">
+                                <Mail size={18} />
                             </div>
                             <input
-                                type="text"
-                                value="Administrator"
-                                disabled
-                                className="w-full bg-black/40 border border-white/10 rounded-lg py-3 pl-12 pr-4 text-gray-400 cursor-not-allowed"
+                                type="email"
+                                placeholder="Admin Email"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                className="w-full bg-black/20 border border-white/10 rounded-lg py-3 pl-12 pr-4 text-white focus:outline-none focus:border-gold transition-colors"
+                                required
                             />
                         </div>
 
@@ -89,7 +93,6 @@ export default function AdminLogin() {
                                 placeholder="Enter admin password"
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
-                                autoFocus
                                 className="w-full bg-black/20 border border-white/10 rounded-lg py-3 pl-12 pr-4 text-white focus:outline-none focus:border-gold transition-colors"
                                 required
                             />

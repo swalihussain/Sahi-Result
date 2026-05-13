@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import createMiddleware from 'next-intl/middleware';
+import { updateSession } from '@/lib/supabase/middleware';
 
 const intlMiddleware = createMiddleware({
     // A list of all locales that are supported
@@ -9,21 +10,27 @@ const intlMiddleware = createMiddleware({
     defaultLocale: 'en'
 });
 
-export default function middleware(request: NextRequest) {
+export default async function middleware(request: NextRequest) {
     const { pathname } = request.nextUrl;
 
-    // 1. Handle Admin Security
-    if (pathname.includes('/admin/dashboard') || pathname.includes('/admin/assign-codes') || pathname.includes('/admin/final-results')) {
-        const authCookie = request.cookies.get('admin_auth');
-        
-        if (authCookie?.value !== 'authenticated') {
-            const segments = pathname.split('/');
-            const locale = (segments[1] === 'en' || segments[1] === 'ml') ? segments[1] : 'en';
+    // 1. Update Supabase session and get user
+    const { response, user } = await updateSession(request, intlMiddleware);
+
+    // 2. Handle Admin Security
+    // Check if the path is an admin path but NOT the login page
+    const segments = pathname.split('/').filter(Boolean);
+    const isAdminPath = segments.includes('admin');
+    const isLoginPage = segments[segments.length - 1] === 'admin';
+    const isAdminRoute = isAdminPath && !isLoginPage;
+    
+    if (isAdminRoute) {
+        if (!user) {
+            const locale = (segments[0] === 'en' || segments[0] === 'ml') ? segments[0] : 'en';
             return NextResponse.redirect(new URL(`/${locale}/admin`, request.url));
         }
     }
 
-    // 2. Handle Judge Security
+    // 3. Handle Judge Security
     if (pathname.includes('/judgement')) {
         const judgeCookie = request.cookies.get('judge_auth');
         
@@ -34,11 +41,7 @@ export default function middleware(request: NextRequest) {
         }
     }
 
-
-    // 2. Handle Internationalization
-    const response = intlMiddleware(request);
-    
-    // 3. Pass pathname to layout via Next.js internal header propagation
+    // 4. Pass pathname to layout via Next.js internal header propagation
     // This makes x-pathname available to server components via headers().get('x-pathname')
     response.headers.set('x-middleware-request-x-pathname', pathname);
     
