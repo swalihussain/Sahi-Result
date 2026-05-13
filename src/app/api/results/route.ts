@@ -60,14 +60,7 @@ export async function POST(request: Request) {
             participant_names, 
             result_pdf_url,
             code_letter,
-            judge_id,
-            judge1_marks,
-            judge2_marks,
-            judge3_marks,
-            final_marks,
-            rank,
-            feedback,
-            status
+            judge_id
         } = body;
 
         const resultData: any = {
@@ -77,13 +70,8 @@ export async function POST(request: Request) {
             points_awarded,
             participant_names,
             result_pdf_url,
-            judge1_marks,
-            judge2_marks,
-            judge3_marks,
-            final_marks,
-            rank,
-            feedback,
-            status
+            code_letter,
+            judge_id
         };
 
         // If it's a published result (from Admin), it might not have code_letter or judge_id
@@ -100,7 +88,7 @@ export async function POST(request: Request) {
         }
 
         // Standard judging result
-        const judgingData = { ...resultData, code_letter, judge_id };
+        const judgingData = resultData;
         const { data, error } = await supabase
             .from('results')
             .upsert(judgingData, { onConflict: 'competition_id,code_letter,judge_id' })
