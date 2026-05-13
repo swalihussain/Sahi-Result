@@ -46,8 +46,8 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
         }
         
-        // Safety check: if competition_id or team_id/code_letter is missing, skip insertion
-        if (!body.competition_id || (!body.team_id && !body.code_letter)) {
+        // Safety check: if competition_id or team_id is missing, skip insertion
+        if (!body.competition_id || !body.team_id) {
             return NextResponse.json({ success: true, message: 'Skipped invalid entry' });
         }
 
@@ -58,9 +58,7 @@ export async function POST(request: Request) {
             position, 
             points_awarded, 
             participant_names, 
-            result_pdf_url,
-            code_letter,
-            judge_id
+            result_pdf_url
         } = body;
 
         const resultData: any = {
@@ -69,35 +67,19 @@ export async function POST(request: Request) {
             position,
             points_awarded,
             participant_names,
-            result_pdf_url,
-            code_letter,
-            judge_id
+            result_pdf_url
         };
 
-        // If it's a published result (from Admin), it might not have code_letter or judge_id
-        if (isAdmin && !code_letter) {
-            const { data, error } = await supabase
-                .from('results')
-                .insert([resultData])
-                .select();
-            if (error) {
-                console.error('Published result insert error:', error, 'Data:', resultData);
-                return NextResponse.json({ error: error.message }, { status: 500 });
-            }
-            return NextResponse.json(data[0] || { success: true });
-        }
-
-        // Standard judging result
-        const judgingData = resultData;
         const { data, error } = await supabase
             .from('results')
-            .upsert(judgingData, { onConflict: 'competition_id,code_letter,judge_id' })
+            .insert([resultData])
             .select();
 
         if (error) {
-            console.error('Judging result upsert error:', error, 'Data:', judgingData);
+            console.error('Result insert error:', error, 'Data:', resultData);
             return NextResponse.json({ error: error.message }, { status: 500 });
         }
+
         return NextResponse.json(data[0] || { success: true });
     } catch (error: any) {
         console.error('Critical Results API Error:', error);
