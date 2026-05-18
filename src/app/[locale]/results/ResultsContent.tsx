@@ -259,7 +259,7 @@ function ResultsContent({ initialTitle, initialSubtitle, initialTableHeading }: 
                             {filteredProjects.map((row, index) => (
                                 <Link 
                                     key={row.id} 
-                                    href={`/results/${row.serial_number ? row.serial_number.toString().padStart(2, '0') : row.id}`}
+                                    href={`/results/${((row.serial_number && row.serial_number !== '-') ? row.serial_number : '00').toString().padStart(2, '0')}`}
                                     className="group"
                                 >
                                     <motion.div
@@ -270,7 +270,7 @@ function ResultsContent({ initialTitle, initialSubtitle, initialTableHeading }: 
                                         <div className="absolute top-0 right-0 w-32 h-32 md:w-40 md:h-40 bg-gold/5 rounded-full blur-[60px] opacity-0 group-hover/card:opacity-100 transition-opacity duration-700" />
                                         
                                         <div className="w-14 h-14 md:w-20 md:h-20 rounded-full bg-white text-black flex items-center justify-center text-xl md:text-3xl font-black shrink-0 shadow-[0_0_40px_rgba(255,255,255,0.2)] z-10 transition-all duration-500 group-hover/card:scale-110 group-hover/card:bg-gold">
-                                            {row.serial_number ? row.serial_number.toString().padStart(2, '0') : ''}
+                                            {((row.serial_number && row.serial_number !== '-') ? row.serial_number : '00').toString().padStart(2, '0')}
                                         </div>
                                         
                                         <div className="flex-1 min-w-0 z-10">

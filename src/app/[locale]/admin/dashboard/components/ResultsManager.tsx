@@ -1264,11 +1264,11 @@ export default function ResultsManager({ showToast }: { showToast: (msg: string,
                             <div key={res.competition_id} className="bg-white/5 border border-white/10 rounded-2xl p-5 flex items-center justify-between group hover:border-gold/30 transition-all">
                                 <div className="flex items-start gap-5">
                                     <div className="flex items-center justify-center w-12 h-12 rounded-full bg-gold/10 border-2 border-gold/40 text-gold font-black text-xl shadow-[0_0_15px_rgba(212,175,55,0.2)]">
-                                        {res.serial_number ? res.serial_number.toString().padStart(2, '0') : "•"}
+                                        {((res.serial_number && res.serial_number !== '-') ? res.serial_number : '00').toString().padStart(2, '0')}
                                     </div>
                                     <div className="flex-1">
                                         <h4 className="text-white font-bold text-lg uppercase tracking-tight">
-                                            RESULT {res.serial_number ? res.serial_number.toString().padStart(2, '0') : ""} – {res.competition_name}
+                                            RESULT {((res.serial_number && res.serial_number !== '-') ? res.serial_number : '00').toString().padStart(2, '0')} – {res.competition_name}
                                         </h4>
                                         <p className="text-xs text-gray-500 uppercase tracking-[0.2em] font-black mt-1">
                                             {res.category}

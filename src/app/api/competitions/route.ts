@@ -29,10 +29,10 @@ export async function POST(request: Request) {
         const { data: inserted, error } = await supabase.from('competitions').insert([{
             ...data,
             results_only: data.results_only ? 1 : 0
-        }]).select('id').single();
+        }]).select('*').single();
         if (error) throw error;
         revalidatePath('/', 'layout');
-        return NextResponse.json({ success: true, id: inserted.id });
+        return NextResponse.json(inserted);
     } catch (error) {
         console.error('Supabase competitions POST error:', error);
         return NextResponse.json({ error: 'Failed to create competition' }, { status: 500 });
