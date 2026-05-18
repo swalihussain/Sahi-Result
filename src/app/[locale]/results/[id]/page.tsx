@@ -378,7 +378,7 @@ export default function ResultDetailsPage() {
                                     RESULT
                                 </div>
                                 <div style={{ fontSize: '86px', fontWeight: '900', lineHeight: '1', letterSpacing: '-0.05em', color: styles.text }}>
-                                    {competition.serial_number || id}
+                                    {competition.serial_number ? competition.serial_number.toString().padStart(2, '0') : ''}
                                 </div>
                             </div>
 
