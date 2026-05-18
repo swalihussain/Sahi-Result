@@ -165,21 +165,21 @@ export default function ResultDetailsPage() {
             }
 
             // 2. Ensure all images are loaded before rendering
-            const images = Array.from(printRef.current.querySelectorAll('img'));
-            await Promise.all(images.map(img => {
-                if (img.complete) return Promise.resolve();
-                return new Promise(resolve => {
-                    img.onload = resolve;
-                    img.onerror = resolve;
-                });
-            }));
+            await Promise.all(
+                Array.from(document.images)
+                    .filter(img => !img.complete)
+                    .map(img => new Promise(resolve => {
+                        img.onload = resolve;
+                        img.onerror = resolve;
+                    }))
+            );
 
             const html2canvas = (await import('html2canvas')).default;
             const canvas = await html2canvas(printRef.current, {
-                scale: 3, 
+                scale: 2, 
                 useCORS: true,
                 allowTaint: true,
-                backgroundColor: styles.bg,
+                backgroundColor: "#ffffff",
                 width: 1080,
                 height: 1350,
                 x: 0,
@@ -202,14 +202,10 @@ export default function ResultDetailsPage() {
                         const allElements = el.querySelectorAll('*');
                         allElements.forEach(node => {
                             const htmlNode = node as HTMLElement;
-                            htmlNode.style.setProperty('font-family', `${inter.style.fontFamily}, sans-serif`, 'important');
-                            
-                            // Prevent margin collapse and layout shifts
-                            if (htmlNode.tagName === 'P' || htmlNode.tagName === 'H1' || htmlNode.tagName === 'H3') {
-                                if (!htmlNode.style.lineHeight) {
-                                    htmlNode.style.lineHeight = '1.2';
-                                }
-                            }
+                            htmlNode.style.setProperty('font-family', 'var(--font-inter)', 'important');
+                            htmlNode.style.setProperty('line-height', 'normal', 'important');
+                            htmlNode.style.setProperty('letter-spacing', 'inherit', 'important');
+                            htmlNode.style.setProperty('transform', 'none', 'important');
                         });
                     }
                 }
@@ -352,134 +348,99 @@ export default function ResultDetailsPage() {
                             );
                         })()}
 
-                        <div className={`relative z-10 w-full h-full p-[80px] flex flex-col items-start ${inter.className}`} style={{ fontFamily: inter.style.fontFamily }}>
+                        <div className={`absolute inset-0 z-10 w-[1080px] h-[1350px] ${inter.className} ${inter.variable}`} style={{ boxSizing: 'border-box' }}>
                             {/* Header Section */}
-                            <div className="w-full pl-[60px] pr-[140px] mb-[60px] h-[180px] flex-shrink-0">
+                            <div style={{ position: 'absolute', top: '80px', left: '140px', width: '720px', height: '180px' }}>
                                 {settings?.poster_header && (
                                     <img
                                         src={settings.poster_header}
                                         alt="Poster Header"
-                                        className="w-full h-full object-contain object-left"
+                                        style={{ width: '100%', height: '100%', objectFit: 'contain', objectPosition: 'left' }}
                                         onError={(e) => (e.currentTarget.style.display = 'none')}
                                     />
                                 )}
                             </div>
 
-                            {/* Metadata Header - Category, Type, and Result Number */}
-                            <div
-                                id="header-v3"
-                                className={`w-full grid grid-cols-[1fr_auto] items-center pl-[60px] pr-[140px] pb-[60px] border-b-2 mt-[20px]`}
-                                style={{ borderColor: styles.border }}
-                            >
-                                <div className="flex flex-col gap-4 max-w-[70%]">
-                                    <div className="flex flex-wrap items-center gap-3">
-                                        <span
-                                            className="font-medium text-[32px] uppercase tracking-[0.2em] opacity-90"
-                                            style={{ color: styles.text }}
-                                        >
-                                            {competition.category || ""}
-                                        </span>
-                                    </div>
-                                    <h1
-                                        className="font-normal text-[72px] leading-[1.1] uppercase tracking-tighter drop-shadow-sm"
-                                        style={{ color: styles.text }}
-                                    >
-                                        {competition.name}
-                                    </h1>
+                            {/* Title Block */}
+                            <div style={{ position: 'absolute', top: '340px', left: '140px', width: '560px' }}>
+                                <div style={{ fontSize: '32px', textTransform: 'uppercase', letterSpacing: '0.2em', opacity: 0.9, color: styles.text, marginBottom: '16px', fontWeight: '500' }}>
+                                    {competition.category || ""}
                                 </div>
+                                <h1 style={{ margin: 0, fontSize: '72px', lineHeight: '1.1', textTransform: 'uppercase', letterSpacing: '-0.05em', color: styles.text, fontWeight: '400', whiteSpace: 'pre-wrap' }}>
+                                    {competition.name}
+                                </h1>
+                            </div>
 
-                                <div className="flex flex-col items-end">
-                                    <div
-                                        className="p-5 rounded-2xl flex flex-col items-center min-w-[140px]"
-                                        style={{ backgroundColor: styles.card }}
-                                    >
-                                        <span
-                                            className="font-black text-[14px] uppercase tracking-[4px] leading-none mb-3"
-                                            style={{ color: styles.meta }}
-                                        >
-                                            RESULT
-                                        </span>
-                                        <span
-                                            className="font-black text-[86px] leading-none tracking-tighter"
-                                            style={{ color: styles.text }}
-                                        >
-                                            {competition.serial_number || id}
-                                        </span>
-                                    </div>
+                            {/* Result Number Badge */}
+                            <div style={{ position: 'absolute', top: '340px', left: '760px', width: '180px', padding: '20px', borderRadius: '16px', backgroundColor: styles.card, textAlign: 'center' }}>
+                                <div style={{ fontSize: '14px', fontWeight: '900', textTransform: 'uppercase', letterSpacing: '4px', color: styles.meta, marginBottom: '12px', lineHeight: '1' }}>
+                                    RESULT
+                                </div>
+                                <div style={{ fontSize: '86px', fontWeight: '900', lineHeight: '1', letterSpacing: '-0.05em', color: styles.text }}>
+                                    {competition.serial_number || id}
                                 </div>
                             </div>
 
-                            {/* Winners Section */}
-                            <div className="mt-[60px] flex flex-col gap-[75px] w-full pl-[60px] pr-[140px]">
-                                {winnersSorted.map((winner) => (
-                                    <div key={winner.id} className="flex flex-col gap-[75px]">
-                                        {(winner.participant_names || winner.team_name || "").split(/,|\n/).filter(Boolean).map((name: string, nIdx: number) => (
-                                            <div key={nIdx} className="flex items-start gap-12">
-                                                {/* Position-based Diamond Bullets */}
-                                                <div className="pt-5 shrink-0 flex flex-col items-center justify-center w-12">
-                                                    <svg width="32" height="32" viewBox="0 0 24 24" className="drop-shadow-sm">
-                                                        <g fill={
-                                                            winner.position === 1 ? '#2563eb' :
-                                                                winner.position === 2 ? '#3b82f6' :
-                                                                    winner.position === 3 ? '#60a5fa' : '#93c5fd'
-                                                        }>
-                                                            {winner.position === 1 && (
-                                                                <path d="M12 7L17 12L12 17L7 12Z" />
-                                                            )}
-                                                            {winner.position === 2 && (
-                                                                <>
-                                                                    <path d="M12 4L16 8L12 12L8 8Z" />
-                                                                    <path d="M12 12L16 16L12 20L8 16Z" />
-                                                                </>
-                                                            )}
-                                                            {(winner.position === 3 || winner.position > 3) && (
-                                                                <>
-                                                                    <path d="M12 4L16 8L12 12L8 8Z" />
-                                                                    <path d="M7 11L11 15L7 19L3 15Z" />
-                                                                    <path d="M17 11L21 15L17 19L13 15Z" />
-                                                                </>
-                                                            )}
-                                                        </g>
-                                                    </svg>
-                                                </div>
+                            {/* Border Line */}
+                            <div style={{ position: 'absolute', top: '560px', left: '140px', width: '800px', height: '2px', backgroundColor: styles.border }} />
 
-                                                {/* Info Block */}
-                                                <div className="flex flex-col">
-                                                    <h3
-                                                        className="font-semibold text-[52px] uppercase leading-[1.2] tracking-tight mb-1"
-                                                        style={{ color: styles.text }}
-                                                    >
-                                                        {name.trim()}
-                                                    </h3>
-                                                    <p
-                                                        className="font-light text-[34px] leading-tight italic opacity-90 uppercase"
-                                                        style={{ color: styles.sub }}
-                                                    >
-                                                        {winner.units?.unit_name || winner.institution || ""}
-                                                    </p>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                ))}
-                                {winnersSorted.length === 0 && (
-                                    <div
-                                        className="font-serif italic py-20 text-[48px]"
-                                        style={{ color: styles.meta }}
-                                    >
+                            {/* Winners Section */}
+                            <div style={{ position: 'absolute', top: '620px', left: '140px', width: '800px' }}>
+                                {winnersSorted.length === 0 ? (
+                                    <div style={{ fontStyle: 'italic', paddingTop: '80px', fontSize: '48px', color: styles.meta, fontFamily: 'serif' }}>
                                         Waiting for official announcement...
                                     </div>
+                                ) : (
+                                    winnersSorted.map((winner) => (
+                                        <div key={winner.id} style={{ position: 'relative', marginBottom: '75px' }}>
+                                            {(winner.participant_names || winner.team_name || "").split(/,|\n/).filter(Boolean).map((name: string, nIdx: number) => (
+                                                <div key={nIdx} style={{ position: 'relative', marginBottom: '75px', minHeight: '80px' }}>
+                                                    {/* Position-based Diamond Bullets */}
+                                                    <div style={{ position: 'absolute', left: '0', top: '20px', width: '32px' }}>
+                                                        <svg width="32" height="32" viewBox="0 0 24 24" style={{ filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.1))' }}>
+                                                            <g fill={
+                                                                winner.position === 1 ? '#2563eb' :
+                                                                    winner.position === 2 ? '#3b82f6' :
+                                                                        winner.position === 3 ? '#60a5fa' : '#93c5fd'
+                                                            }>
+                                                                {winner.position === 1 && (
+                                                                    <path d="M12 7L17 12L12 17L7 12Z" />
+                                                                )}
+                                                                {winner.position === 2 && (
+                                                                    <>
+                                                                        <path d="M12 4L16 8L12 12L8 8Z" />
+                                                                        <path d="M12 12L16 16L12 20L8 16Z" />
+                                                                    </>
+                                                                )}
+                                                                {(winner.position === 3 || winner.position > 3) && (
+                                                                    <>
+                                                                        <path d="M12 4L16 8L12 12L8 8Z" />
+                                                                        <path d="M7 11L11 15L7 19L3 15Z" />
+                                                                        <path d="M17 11L21 15L17 19L13 15Z" />
+                                                                    </>
+                                                                )}
+                                                            </g>
+                                                        </svg>
+                                                    </div>
+
+                                                    {/* Info Block */}
+                                                    <div style={{ position: 'relative', left: '80px', width: '720px' }}>
+                                                        <h3 style={{ margin: '0 0 10px 0', fontSize: '52px', lineHeight: '1.2', fontWeight: '600', textTransform: 'uppercase', color: styles.text }}>
+                                                            {name.trim()}
+                                                        </h3>
+                                                        <p style={{ margin: '0', fontSize: '34px', lineHeight: '1.2', fontStyle: 'italic', opacity: 0.9, textTransform: 'uppercase', color: styles.sub }}>
+                                                            {winner.units?.unit_name || winner.institution || ""}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    ))
                                 )}
                             </div>
 
-                            {/* Branding Footer */}
                             {/* Branding Footer explicitly hidden */}
-                            <div
-                                id="footer-hidden"
-                                className="mt-auto w-full h-[120px] opacity-0 pointer-events-none"
-                            />
-
-
+                            <div id="footer-hidden" style={{ position: 'absolute', bottom: '0', left: '0', width: '1080px', height: '120px', opacity: 0, pointerEvents: 'none' }} />
                         </div>
                     </motion.div>
                 </div>
