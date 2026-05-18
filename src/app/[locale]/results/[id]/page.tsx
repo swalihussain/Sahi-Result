@@ -372,9 +372,9 @@ export default function ResultDetailsPage() {
                                     winnersSorted.map((winner) => (
                                         <div key={winner.id} style={{ position: 'relative', marginBottom: '75px' }}>
                                             {(winner.participant_names || winner.team_name || "").split(/,|\n/).filter(Boolean).map((name: string, nIdx: number) => (
-                                                <div key={nIdx} style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'flex-start', marginBottom: '75px', gap: '12px' }}>
+                                                <div key={nIdx} style={{ display: 'flex', alignItems: 'flex-start', gap: '48px', marginBottom: '75px' }}>
                                                     {/* Position-based Diamond Bullets */}
-                                                    <div style={{ flexShrink: 0, width: '32px' }}>
+                                                    <div style={{ width: '48px', minWidth: '48px', display: 'flex', justifyContent: 'center', alignItems: 'flex-start', paddingTop: '8px' }}>
                                                         <svg width="32" height="32" viewBox="0 0 24 24" style={{ filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.1))' }}>
                                                             <g fill={
                                                                 winner.position === 1 ? '#2563eb' :
@@ -402,7 +402,7 @@ export default function ResultDetailsPage() {
                                                     </div>
 
                                                     {/* Info Block */}
-                                                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', width: '100%' }}>
+                                                    <div style={{ flex: 1, margin: 0, padding: 0, display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
                                                         <h3 style={{ margin: 0, fontSize: '58px', lineHeight: '1.15', fontWeight: '700', textTransform: 'uppercase', color: styles.text }}>
                                                             {name.trim()}
                                                         </h3>
