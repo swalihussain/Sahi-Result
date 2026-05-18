@@ -222,8 +222,12 @@ export default function ResultsManager({ showToast }: { showToast: (msg: string,
             const responses = await Promise.all(promises);
             const allOk = responses.every(r => r.ok);
 
-            if (allOk) {
+             if (allOk) {
                 showToast(isEditing ? "Results updated successfully!" : "All results published successfully!", "success");
+                
+                const submittedCompId = formData.competition_id;
+                const submittedSerialNumber = formData.serial_number;
+
                 setFormData({
                     competition_id: "",
                     serial_number: "",
@@ -238,7 +242,7 @@ export default function ResultsManager({ showToast }: { showToast: (msg: string,
                 
                 // Migrations for existing DBs
                 const columns = ['serial_number', 'competition_type', 'template_image', 'description', 'results_only'];
-                const selectedComp = competitions.find(c => c.id.toString() === formData.competition_id);
+                const selectedComp = competitions.find(c => c.id.toString() === submittedCompId);
                 if (selectedComp) {
                     const updatedCompData: any = { ...selectedComp };
                     let needsUpdate = false;
@@ -248,13 +252,13 @@ export default function ResultsManager({ showToast }: { showToast: (msg: string,
                             needsUpdate = true;
                         }
                     }
-                    if (formData.serial_number !== undefined) {
-                        updatedCompData.serial_number = formData.serial_number;
+                    if (submittedSerialNumber !== undefined) {
+                        updatedCompData.serial_number = submittedSerialNumber;
                         needsUpdate = true;
                     }
 
                     if (needsUpdate) {
-                        await fetch(`/api/competitions/${formData.competition_id}`, {
+                        await fetch(`/api/competitions/${submittedCompId}`, {
                             method: "PUT",
                             headers: { "Content-Type": "application/json" },
                             body: JSON.stringify(updatedCompData)
@@ -1048,7 +1052,12 @@ export default function ResultsManager({ showToast }: { showToast: (msg: string,
                                     value={formData.competition_id}
                                     onChange={(e) => {
                                         const compId = e.target.value;
-                                        setFormData({ ...formData, competition_id: compId });
+                                        const comp = competitions.find(c => c.id.toString() === compId);
+                                        setFormData({ 
+                                            ...formData, 
+                                            competition_id: compId,
+                                            serial_number: comp?.serial_number || ""
+                                        });
                                     }}
                                 >
                                     <option value="">{selectedAdminCategory === "All" ? "-- Select Category First --" : filteredCompetitions.length === 0 ? "-- No Competitions Found --" : "-- Choose Competition --"}</option>

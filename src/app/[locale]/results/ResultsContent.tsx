@@ -259,7 +259,7 @@ function ResultsContent({ initialTitle, initialSubtitle, initialTableHeading }: 
                             {filteredProjects.map((row, index) => (
                                 <Link 
                                     key={row.id} 
-                                    href={`/results/${row.id}`}
+                                    href={`/results/${row.serial_number ? row.serial_number.toString().padStart(2, '0') : row.id}`}
                                     className="group"
                                 >
                                     <motion.div

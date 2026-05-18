@@ -113,30 +113,35 @@ export default function ResultDetailsPage() {
                 const compData = await compRes.json();
 
                 if (Array.isArray(compData)) {
-                    const currentComp = compData.find((c: any) => c.id.toString() === id);
-                    if (currentComp) setCompetition(currentComp);
-                }
+                    const currentComp = compData.find((c: any) => {
+                        const paddedSerial = c.serial_number?.toString().padStart(2, '0');
+                        return c.id.toString() === id || paddedSerial === id;
+                    });
+                    if (currentComp) {
+                        setCompetition(currentComp);
+                        
+                        // Fetch results for this competition using its actual database id
+                        const resRes = await fetchWithTimeout(`/api/results?competition_id=${currentComp.id}`);
+                        if (!resRes.ok) throw new Error("Results fetch failed");
+                        const resData = await resRes.json();
+                        if (Array.isArray(resData)) {
+                            setWinners(resData);
 
-                // Fetch results for this competition
-                const resRes = await fetchWithTimeout(`/api/results?competition_id=${id}`);
-                if (!resRes.ok) throw new Error("Results fetch failed");
-                const resData = await resRes.json();
-                if (Array.isArray(resData)) {
-                    setWinners(resData);
-
-                    // Parse templates from result_pdf_url
-                    const rawPdfUrl = resData.find((w: any) => w.result_pdf_url)?.result_pdf_url;
-                    if (rawPdfUrl) {
-                        try {
-                            const parsed = JSON.parse(rawPdfUrl);
-                            const templateList = Array.isArray(parsed) ? parsed : [rawPdfUrl];
-                            setTemplates(templateList);
-                            if (templateList.length > 0) {
-                                setTemplateId(0); // Default to black text theme for custom backgrounds
+                            // Parse templates from result_pdf_url
+                            const rawPdfUrl = resData.find((w: any) => w.result_pdf_url)?.result_pdf_url;
+                            if (rawPdfUrl) {
+                                try {
+                                    const parsed = JSON.parse(rawPdfUrl);
+                                    const templateList = Array.isArray(parsed) ? parsed : [rawPdfUrl];
+                                    setTemplates(templateList);
+                                    if (templateList.length > 0) {
+                                        setTemplateId(0); // Default to black text theme for custom backgrounds
+                                    }
+                                } catch (e) {
+                                    setTemplates([rawPdfUrl]);
+                                    setTemplateId(0);
+                                }
                             }
-                        } catch (e) {
-                            setTemplates([rawPdfUrl]);
-                            setTemplateId(0);
                         }
                     }
                 }
