@@ -178,13 +178,36 @@ export default function ResultDetailsPage() {
                     }))
             );
 
+            const el = printRef.current;
+            const origStyle = el.getAttribute('style') || '';
+
+            el.style.setProperty('width', '1080px', 'important');
+            el.style.setProperty('height', '1350px', 'important');
+            el.style.setProperty('min-width', '1080px', 'important');
+            el.style.setProperty('max-width', '1080px', 'important');
+            el.style.setProperty('min-height', '1350px', 'important');
+            el.style.setProperty('max-height', '1350px', 'important');
+            el.style.setProperty('box-sizing', 'border-box', 'important');
+            el.style.setProperty('overflow', 'hidden', 'important');
+            el.style.setProperty('position', 'relative', 'important');
+            el.style.setProperty('transform', 'none', 'important');
+            el.style.setProperty('zoom', '1', 'important');
+
+            await new Promise(r => setTimeout(r, 1000));
+
             const html2canvas = (await import('html2canvas')).default;
-            const canvas = await html2canvas(printRef.current, {
-                scale: 2, 
+            const canvas = await html2canvas(el, {
+                scale: 1, 
                 useCORS: true,
-                backgroundColor: "#ffffff",
-                logging: false
+                backgroundColor: "#efefef",
+                logging: false,
+                width: 1080,
+                height: 1350,
+                windowWidth: 1080,
+                windowHeight: 1350
             });
+
+            el.setAttribute('style', origStyle);
 
             canvas.toBlob((blob) => {
                 if (!blob) throw new Error("Canvas to Blob failed");
