@@ -113,10 +113,11 @@ export default function ResultDetailsPage() {
                 const compData = await compRes.json();
 
                 if (Array.isArray(compData)) {
-                    const currentComp = compData.find((c: any) => {
-                        const paddedSerial = ((c.serial_number && c.serial_number !== '-') ? c.serial_number : '00').toString().padStart(2, '0');
-                        return c.id.toString() === id || paddedSerial === id;
-                    });
+                    const currentComp = compData.find((c: any) => c.id.toString() === id) || 
+                                       compData.find((c: any) => {
+                                           const paddedSerial = ((c.serial_number && c.serial_number !== '-') ? c.serial_number : '00').toString().padStart(2, '0');
+                                           return paddedSerial === id;
+                                       });
                     if (currentComp) {
                         setCompetition(currentComp);
                         
