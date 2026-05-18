@@ -34,7 +34,10 @@ export async function PUT(
     const { id } = await params;
     const data = await request.json();
 
-    const { error } = await supabase.from('competitions').update(data).eq('id', id);
+    // Exclude read-only/system fields to prevent PG database constraint errors
+    const { id: _, created_at: __, ...updateData } = data;
+
+    const { error } = await supabase.from('competitions').update(updateData).eq('id', id);
     if (error) throw error;
 
     return NextResponse.json({ success: true });
