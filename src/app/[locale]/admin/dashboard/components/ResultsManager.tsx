@@ -258,11 +258,24 @@ export default function ResultsManager({ showToast }: { showToast: (msg: string,
                     }
 
                     if (needsUpdate) {
-                        await fetch(`/api/competitions/${submittedCompId}`, {
-                            method: "PUT",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify(updatedCompData)
-                        });
+                        console.log("Updating competition serial_number:", submittedSerialNumber, "for comp:", submittedCompId);
+                        try {
+                            const putRes = await fetch(`/api/competitions/${submittedCompId}`, {
+                                method: "PUT",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify(updatedCompData)
+                            });
+                            if (!putRes.ok) {
+                                const errData = await putRes.json();
+                                console.error("Failed to update competition serial number:", errData);
+                                showToast(errData.error || "Failed to update serial number", "error");
+                            } else {
+                                console.log("Competition serial number updated successfully!");
+                            }
+                        } catch (err: any) {
+                            console.error("Network error updating competition:", err);
+                            showToast("Network error updating competition", "error");
+                        }
                     }
                 }
 
