@@ -178,6 +178,9 @@ export default function ResultDetailsPage() {
             const canvas = await html2canvas(printRef.current, {
                 scale: 2, 
                 useCORS: true,
+                // @ts-ignore: Custom properties requested by user
+                letterRendering: true,
+                foreignObjectRendering: true,
                 allowTaint: true,
                 backgroundColor: "#ffffff",
                 width: 1080,
@@ -203,7 +206,10 @@ export default function ResultDetailsPage() {
                         allElements.forEach(node => {
                             const htmlNode = node as HTMLElement;
                             htmlNode.style.setProperty('font-family', 'var(--font-inter)', 'important');
-                            htmlNode.style.setProperty('line-height', 'normal', 'important');
+                            htmlNode.style.setProperty('box-sizing', 'border-box', 'important');
+                            htmlNode.style.setProperty('line-height', '1', 'important');
+                            htmlNode.style.setProperty('margin', '0', 'important');
+                            htmlNode.style.setProperty('padding', '0', 'important');
                             htmlNode.style.setProperty('letter-spacing', 'inherit', 'important');
                             htmlNode.style.setProperty('transform', 'none', 'important');
                         });
@@ -394,9 +400,9 @@ export default function ResultDetailsPage() {
                                     winnersSorted.map((winner) => (
                                         <div key={winner.id} style={{ position: 'relative', marginBottom: '75px' }}>
                                             {(winner.participant_names || winner.team_name || "").split(/,|\n/).filter(Boolean).map((name: string, nIdx: number) => (
-                                                <div key={nIdx} style={{ position: 'relative', marginBottom: '75px', minHeight: '80px' }}>
+                                                <div key={nIdx} style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'flex-start', marginBottom: '75px' }}>
                                                     {/* Position-based Diamond Bullets */}
-                                                    <div style={{ position: 'absolute', left: '0', top: '20px', width: '32px' }}>
+                                                    <div style={{ flexShrink: 0, width: '32px', marginRight: '48px', marginTop: '12px' }}>
                                                         <svg width="32" height="32" viewBox="0 0 24 24" style={{ filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.1))' }}>
                                                             <g fill={
                                                                 winner.position === 1 ? '#2563eb' :
@@ -424,13 +430,15 @@ export default function ResultDetailsPage() {
                                                     </div>
 
                                                     {/* Info Block */}
-                                                    <div style={{ position: 'relative', left: '80px', width: '720px' }}>
-                                                        <h3 style={{ margin: '0 0 10px 0', fontSize: '52px', lineHeight: '1.2', fontWeight: '600', textTransform: 'uppercase', color: styles.text }}>
-                                                            {name.trim()}
-                                                        </h3>
-                                                        <p style={{ margin: '0', fontSize: '34px', lineHeight: '1.2', fontStyle: 'italic', opacity: 0.9, textTransform: 'uppercase', color: styles.sub }}>
-                                                            {winner.units?.unit_name || winner.institution || ""}
-                                                        </p>
+                                                    <div style={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
+                                                        <div style={{ display: 'block', width: '100%' }}>
+                                                            <h3 style={{ margin: '0 0 8px 0', fontSize: '58px', lineHeight: '58px', fontWeight: '700', textTransform: 'uppercase', color: styles.text }}>
+                                                                {name.trim()}
+                                                            </h3>
+                                                            <p style={{ margin: '0', fontSize: '28px', lineHeight: '28px', position: 'relative', top: '-4px', fontStyle: 'italic', opacity: 0.9, textTransform: 'uppercase', color: styles.sub }}>
+                                                                {winner.units?.unit_name || winner.institution || ""}
+                                                            </p>
+                                                        </div>
                                                     </div>
                                                 </div>
                                             ))}
