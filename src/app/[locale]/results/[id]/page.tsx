@@ -156,7 +156,11 @@ export default function ResultDetailsPage() {
     }, [id]);
 
     const handleDownloadHQ = async () => {
-        if (!printRef.current || !competition) return;
+        if (!printRef.current) {
+            console.error("Poster missing");
+            return;
+        }
+        if (!competition) return;
         setDownloading(true);
         try {
             // 1. Ensure fonts are fully loaded
@@ -178,43 +182,8 @@ export default function ResultDetailsPage() {
             const canvas = await html2canvas(printRef.current, {
                 scale: 2, 
                 useCORS: true,
-                // @ts-ignore: Custom properties requested by user
-                letterRendering: true,
-                foreignObjectRendering: true,
-                allowTaint: true,
                 backgroundColor: "#ffffff",
-                width: 1080,
-                height: 1350,
-                x: 0,
-                y: 0,
-                scrollX: 0,
-                scrollY: 0,
-                logging: false,
-                onclone: (clonedDoc) => {
-                    const el = clonedDoc.querySelector('[data-poster-container]') as HTMLElement;
-                    if (el) {
-                        el.style.transform = 'none';
-                        el.style.width = '1080px';
-                        el.style.height = '1350px';
-                        el.style.position = 'relative';
-                        el.style.margin = '0';
-                        el.style.padding = '0';
-                        el.style.overflow = 'hidden';
-                        
-                        // Force consistent font rendering and line heights
-                        const allElements = el.querySelectorAll('*');
-                        allElements.forEach(node => {
-                            const htmlNode = node as HTMLElement;
-                            htmlNode.style.setProperty('font-family', 'var(--font-inter)', 'important');
-                            htmlNode.style.setProperty('box-sizing', 'border-box', 'important');
-                            htmlNode.style.setProperty('line-height', '1', 'important');
-                            htmlNode.style.setProperty('margin', '0', 'important');
-                            htmlNode.style.setProperty('padding', '0', 'important');
-                            htmlNode.style.setProperty('letter-spacing', 'inherit', 'important');
-                            htmlNode.style.setProperty('transform', 'none', 'important');
-                        });
-                    }
-                }
+                logging: false
             });
 
             canvas.toBlob((blob) => {
@@ -324,7 +293,10 @@ export default function ResultDetailsPage() {
                             transformOrigin: 'top left',
                             position: 'absolute',
                             left: 0,
-                            top: 0
+                            top: 0,
+                            display: 'block',
+                            visibility: 'visible',
+                            opacity: 1
                         }}
                         className="overflow-hidden shadow-[0_0_80px_rgba(0,0,0,0.5)]"
                         ref={printRef}
