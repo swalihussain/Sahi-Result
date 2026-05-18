@@ -6,6 +6,14 @@ import { motion } from 'framer-motion';
 import { ArrowLeft, Download, Trophy, ArrowRightLeft, Share2, X } from 'lucide-react';
 import { Link, useRouter } from '@/i18n/routing';
 import { useParams } from 'next/navigation';
+import localFont from 'next/font/local';
+
+const inter = localFont({
+    src: '../../../../../public/fonts/Inter.ttf',
+    variable: '--font-inter',
+    display: 'block',
+    preload: true,
+});
 
 export default function ResultDetailsPage() {
     const t = useTranslations('Results');
@@ -194,7 +202,7 @@ export default function ResultDetailsPage() {
                         const allElements = el.querySelectorAll('*');
                         allElements.forEach(node => {
                             const htmlNode = node as HTMLElement;
-                            htmlNode.style.setProperty('font-family', "'Inter', 'Arial', sans-serif", 'important');
+                            htmlNode.style.setProperty('font-family', `${inter.style.fontFamily}, sans-serif`, 'important');
                             
                             // Prevent margin collapse and layout shifts
                             if (htmlNode.tagName === 'P' || htmlNode.tagName === 'H1' || htmlNode.tagName === 'H3') {
@@ -344,7 +352,7 @@ export default function ResultDetailsPage() {
                             );
                         })()}
 
-                        <div className="relative z-10 w-full h-full p-[80px] flex flex-col items-start font-sans">
+                        <div className={`relative z-10 w-full h-full p-[80px] flex flex-col items-start ${inter.className}`} style={{ fontFamily: inter.style.fontFamily }}>
                             {/* Header Section */}
                             <div className="w-full pl-[60px] pr-[140px] mb-[60px] h-[180px] flex-shrink-0">
                                 {settings?.poster_header && (
